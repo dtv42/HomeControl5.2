@@ -1,0 +1,50 @@
+﻿extensions: designer.cs generated.cs
+extensions: .cs .cpp .h .hpp .ino .json
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="%FileName%" company="DTV-Online">
+//   Copyright (c) %CurrentYear% Dr. Peter Trimmel. All rights reserved.
+// </copyright>
+// <license>
+//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
+// </license>
+// <created>%CreationDay%-%CreationMonth%-%CreationYear% %CreationTime%</created>
+// <author>%UserDisplayName%</author>
+// --------------------------------------------------------------------------------------------------------------------
+extensions:  .xml .config .xsd
+<!--
+  <copyright file="%FileName%" company="DTV-Online">
+    Copyright(c) %CurrentYear% Dr. Peter Trimmel. All rights reserved.
+  </copyright>
+  <license>
+    Licensed under the MIT license. See the LICENSE file in the project root for more information.
+  </license>
+  <created>%CreationDay%-%CreationMonth%-%CreationYear% %CreationTime%</created>
+  <author>%UserDisplayName%</author>
+-->
+extensions: .ps1
+# --------------------------------------------------------------------------------------------------------------------
+#  File: "%FileName%"
+#  Company: "DTV-Online"
+#  Copyright(c) %CurrentYear% Dr. Peter Trimmel. All rights reserved.
+#  Licensed under the MIT license. See the LICENSE file in the project root for more information.
+#  Created: %CreationDay%-%CreationMonth%-%CreationYear% %CreationTime%
+#  Author: %UserDisplayName%
+# --------------------------------------------------------------------------------------------------------------------
+extensions: .aspx .ascx
+<%-- 
+  File: "%FileName%"
+  Company: "DTV-Online"
+  Copyright(c) %CurrentYear% Dr. Peter Trimmel. All rights reserved.
+  Licensed under the MIT license. See the LICENSE file in the project root for more information.
+  Created: %CreationDay%-%CreationMonth%-%CreationYear% %CreationTime%
+  Author: %UserDisplayName%
+--%>
+extensions: .vb
+' --------------------------------------------------------------------------------------------------------------------
+'  File: "%FileName%"
+'  Company: "DTV-Online"
+'  Copyright(c) %CurrentYear% Dr. Peter Trimmel. All rights reserved.
+'  Licensed under the MIT license. See the LICENSE file in the project root for more information.
+'  Created: %CreationDay%-%CreationMonth%-%CreationYear% %CreationTime%
+'  Author: %UserDisplayName%
+' --------------------------------------------------------------------------------------------------------------------

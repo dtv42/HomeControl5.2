@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "UtilityApp": {
+      "commandName": "Project",
+      "commandLineArgs": "--verbose",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

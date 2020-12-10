@@ -10,6 +10,9 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityApp.Models
 {
+    /// <summary>
+    /// The options for the greet sub command.
+    /// </summary>
     public class GreetOptions
     {
         public string Greeting { get; set; } = string.Empty;

@@ -52,47 +52,50 @@ namespace UtilityApp
         /// <returns>When complete, an integer representing success (0) or failure (non-0).</returns>
         public static async Task<int> Main(string[] args)
         {
-            var hostBuilder = Host.CreateDefaultBuilder()
+            // Create host using serilog, adding commands and options services.
+            var host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
                     services.AddCommandOptions<GreetCommand, GreetOptions>();
                     services.AddRootCommandOptions<AppCommand, GlobalOptions>();
-                });
+                })
+                .UseSerilog()
+                .Build();
 
-            hostBuilder.UseSerilog();
-
-            var host = hostBuilder.Build();
+            // Binding application settings.
             var serviceProvider = host.Services;
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-
             configuration.GetSection("AppSettings").Bind(Settings);
 
+            // Configure Serilog logger.
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(LevelSwitch)
                 .WriteTo.File("Logs/log.txt", rollingInterval: RollingInterval.Day)
                 .WriteTo.Console()
                 .CreateLogger();
 
-            Log.Debug("Setup root command");
+            // Setup command line builder and adding sub commands
             var rootCommand = serviceProvider.GetRequiredService<RootCommand>();
             var commandLineBuilder = new CommandLineBuilder(rootCommand);
 
             foreach (Command command in serviceProvider.GetServices<Command>())
             {
-                Log.Debug($"Adding command {command.Name}");
                 commandLineBuilder.AddCommand(command);
             }
 
+            // Setup command line parser.
             var parser = commandLineBuilder
                 .UseParseErrorReporting()
                 .UseVersionOption()
                 .UseDefaults()
                 .Build();
 
+            // Setup application environment.
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
+            // Run commandline application.
             try
             {
                 return await parser.InvokeAsync(args).ConfigureAwait(false);

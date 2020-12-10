@@ -23,10 +23,27 @@ namespace UtilityApp
 
     #endregion
 
+    /// <summary>
+    /// The "greet" sub command.
+    /// </summary>
     public class GreetCommand : BaseCommand
     {
+        #region Private Data Members
+
+        /// <summary>
+        /// The greeting option (configured using app settings only).
+        /// </summary>
         private string _greeting = string.Empty;
-        
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GreetCommand"/> class.
+        /// </summary>
+        /// <param name="options">The greet command options.</param>
+        /// <param name="logger">The logger instance.</param>
         public GreetCommand(GreetOptions options, ILogger<GreetCommand> logger)
            : base(logger, "greet", "Says a greeting to the specified person.")
         {
@@ -42,18 +59,28 @@ namespace UtilityApp
             _greeting = options.Greeting;
         }
 
-        private int HandleCommand(GlobalOptions globals, string name)
+        #endregion Constructors
+
+        #region Private Methods
+
+        /// <summary>
+        /// The command handler for the greet sub command.
+        /// </summary>
+        /// <param name="options">The global options.</param>
+        /// <param name="name">The name option.</param>
+        /// <returns>Zero if sucessful.</returns>
+        private int HandleCommand(GlobalOptions options, string name)
         {
-            Program.LevelSwitch.MinimumLevel = globals.LogLevel;
+            Program.LevelSwitch.MinimumLevel = options.LogLevel;
 
             try
             {
-                if (globals.Verbose)
+                if (options.Verbose)
                 {
-                    Console.WriteLine($"Password: {globals.Password}");
-                    Console.WriteLine($"Verbose:  {globals.Verbose}");
-                    Console.WriteLine($"LogLevel: {globals.LogLevel}");
-                    Console.WriteLine($"Uri:      {globals.Uri}");
+                    Console.WriteLine($"Password: {options.Password}");
+                    Console.WriteLine($"Verbose:  {options.Verbose}");
+                    Console.WriteLine($"LogLevel: {options.LogLevel}");
+                    Console.WriteLine($"Uri:      {options.Uri}");
                 }
 
                 _logger.LogDebug($"Greeting:  {_greeting}");
@@ -69,5 +96,7 @@ namespace UtilityApp
 
             return 0;
         }
+
+        #endregion Private Methods
     }
 }

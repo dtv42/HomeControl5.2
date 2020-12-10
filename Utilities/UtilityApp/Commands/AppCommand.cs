@@ -25,10 +25,28 @@ namespace UtilityApp.Commands
 
     #endregion Using Directives
 
+    /// <summary>
+    /// The application root command.
+    /// </summary>
     public class AppCommand : BaseRootCommand
     {
+        #region Private Data Members
+
+        /// <summary>
+        /// The application configuration instance.
+        /// </summary>
         private readonly IConfiguration _configuration;
 
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AppCommand"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration instance.</param>
+        /// <param name="options">The root command options.</param>
+        /// <param name="logger">The logger instance.</param>
         public AppCommand(IConfiguration configuration, GlobalOptions options, ILogger<AppCommand> logger) : base(options, logger, "Console app root command.")
         {
             AddGlobalOption(new Option<Uri>(
@@ -61,6 +79,17 @@ namespace UtilityApp.Commands
             _configuration = configuration;
         }
 
+        #endregion Constructors
+
+        #region Private Methods
+
+        /// <summary>
+        /// The command handler for the root command.
+        /// </summary>
+        /// <param name="logging">Flag indicating logging test.</param>
+        /// <param name="configuration">Flag indicating to show configuration.</param>
+        /// <param name="options">The global options.</param>
+        /// <returns>Zero if successful.</returns>
         private int HandleCommand(bool logging, bool configuration, GlobalOptions options)
         {
             try
@@ -106,5 +135,7 @@ namespace UtilityApp.Commands
 
             return 0;
         }
+
+        #endregion Private Methods
     }
 }

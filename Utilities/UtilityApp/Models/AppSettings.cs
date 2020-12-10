@@ -10,6 +10,9 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityApp.Models
 {
+    /// <summary>
+    /// THe application settings.
+    /// </summary>
     public class AppSettings
     {
         public GlobalOptions GlobalOptions { get; set; } = new GlobalOptions();

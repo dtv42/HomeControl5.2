@@ -14,12 +14,13 @@ namespace UtilityApp.Models
 
     using System;
 
-    using Serilog.Events;
-
     using UtilityLib;
 
     #endregion Using Directives
 
+    /// <summary>
+    /// The application global options.
+    /// </summary>
     public class GlobalOptions : BaseOptions
     {
         public string Password { get; set; } = string.Empty;

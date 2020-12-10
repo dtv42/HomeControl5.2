@@ -18,21 +18,17 @@ namespace UtilityApp
 
     using Microsoft.Extensions.Logging;
 
-    using Serilog.Core;
-    using Serilog.Events;
-
+    using UtilityLib;
     using UtilityApp.Models;
 
     #endregion
 
-    public class GreetCommand : Command
+    public class GreetCommand : BaseCommand
     {
-        private readonly GreetOptions _options;
-        private readonly ILogger<GreetCommand> _logger;
-        private readonly LoggingLevelSwitch _levelSwitch;
-
-        public GreetCommand(ILogger<GreetCommand> logger, LoggingLevelSwitch levelSwitch, GreetOptions options)
-           : base("greet", "Says a greeting to the specified person.")
+        private string _greeting = string.Empty;
+        
+        public GreetCommand(GreetOptions options, ILogger<GreetCommand> logger)
+           : base(logger, "greet", "Says a greeting to the specified person.")
         {
             AddArgument(new Argument<string>(
                 name: "name",
@@ -40,32 +36,30 @@ namespace UtilityApp
                 description: "The name of the person to greet.")
             );
 
-            Handler = CommandHandler.Create((Uri uri, bool verbose, LogEventLevel level, string password, string name) 
-                => HandleCommand(uri, verbose, level, password, name));
+            Handler = CommandHandler.Create((GlobalOptions globals, string name) 
+                => HandleCommand(globals, name));
 
-            _options = options;
-            _logger = logger;
-            _levelSwitch = levelSwitch;
+            _greeting = options.Greeting;
         }
 
-        private int HandleCommand(Uri uri, bool verbose, LogEventLevel level, string password, string name)
+        private int HandleCommand(GlobalOptions globals, string name)
         {
+            Program.LevelSwitch.MinimumLevel = globals.LogLevel;
+
             try
             {
-                _levelSwitch.MinimumLevel = level;
-
-                if (verbose)
+                if (globals.Verbose)
                 {
-                    Console.WriteLine($"Password: {password}");
-                    Console.WriteLine($"Verbose:  {verbose}");
-                    Console.WriteLine($"LogLevel: {level}");
-                    Console.WriteLine($"Uri:      {uri}");
+                    Console.WriteLine($"Password: {globals.Password}");
+                    Console.WriteLine($"Verbose:  {globals.Verbose}");
+                    Console.WriteLine($"LogLevel: {globals.LogLevel}");
+                    Console.WriteLine($"Uri:      {globals.Uri}");
                 }
 
-                _logger.LogDebug($"Greeting:  {_options.Greeting}");
-                _logger.LogDebug($"Name:      {_options.Name}");
+                _logger.LogDebug($"Greeting:  {_greeting}");
+                _logger.LogDebug($"Name:      {name}");
 
-                Console.WriteLine($"{_options.Greeting} {name}!");
+                Console.WriteLine($"{_greeting} {name}!");
             }
             catch (Exception ex)
             {

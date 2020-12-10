@@ -20,22 +20,16 @@ namespace UtilityApp.Commands
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
-    using Serilog.Core;
-    using Serilog.Events;
-
     using UtilityLib;
     using UtilityApp.Models;
-    using System.Collections.Generic;
 
-    #endregion
+    #endregion Using Directives
 
-    public class AppCommand : RootCommand
+    public class AppCommand : BaseRootCommand
     {
-        private readonly IConfiguration _config;
-        private readonly ILogger<AppCommand> _logger;
-        private readonly LoggingLevelSwitch _levelSwitch;
+        private readonly IConfiguration _configuration;
 
-        public AppCommand(IConfiguration config, ILogger<AppCommand> logger, LoggingLevelSwitch levelSwitch, GlobalOptions options) : base("Console app root command.")
+        public AppCommand(IConfiguration configuration, GlobalOptions options, ILogger<AppCommand> logger) : base(options, logger, "Console app root command.")
         {
             AddGlobalOption(new Option<Uri>(
                 alias: "--uri",
@@ -52,54 +46,31 @@ namespace UtilityApp.Commands
                 .Name("STRING")
             );
 
-            AddGlobalOption(new Option<bool>(
-                alias: "--verbose",
-                description: "Global verbose option")
-                .Default(options.Verbose)
-            );
-
-            AddGlobalOption(new Option<LogEventLevel>(
-                alias: "--loglevel",
-                description: "Global log level option")
-                .Default(options.LogLevel)
-            );
-
             AddOption(new Option<bool>(
                 alias: "--logging",
                 description: "Command logging option")
             );
 
             AddOption(new Option<bool>(
-                alias: "--config",
-                description: "Command config option")
+                alias: "--configuration",
+                description: "Command show configuration")
             );
 
-            Handler = CommandHandler.Create((bool logging, bool config, GlobalOptions options) => HandleCommand(logging, config, options));
+            Handler = CommandHandler.Create((bool logging, bool configuration, GlobalOptions options) => HandleCommand(logging, configuration, options));
 
-            _config = config;
-            _logger = logger;
-            _levelSwitch = levelSwitch;
+            _configuration = configuration;
         }
 
-        private int HandleCommand(bool logging, bool config, GlobalOptions options)
+        private int HandleCommand(bool logging, bool configuration, GlobalOptions options)
         {
             try
             {
-                _levelSwitch.MinimumLevel = options.LogLevel;
+                Program.LevelSwitch.MinimumLevel = options.LogLevel;
 
-                if (options.Verbose)
-                {
-                    Console.WriteLine($"Password: {options.Password}");
-                    Console.WriteLine($"Verbose:  {options.Verbose}");
-                    Console.WriteLine($"LogLevel: {options.LogLevel}");
-                    Console.WriteLine($"Uri:      {options.Uri}");
-                    Console.WriteLine($"Logging:  {logging}");
-                }
-
-                if (config)
+                if (options.Settings)
                 {
                     var serializerOptions = new JsonSerializerOptions { WriteIndented = true };
-                    Console.WriteLine($"Configuration: {JsonSerializer.Serialize(_config.AsEnumerable(), serializerOptions)}");
+                    Console.WriteLine($"AppSettings: {JsonSerializer.Serialize(Program.Settings, serializerOptions)}");
                 }
 
                 if (logging)
@@ -110,6 +81,21 @@ namespace UtilityApp.Commands
                     _logger.LogError("Logging error information.");
                     _logger.LogTrace("Logging trace");
                     _logger.LogWarning("Logging warning.");
+                }
+
+                if (configuration)
+                {
+                    var serializerOptions = new JsonSerializerOptions { WriteIndented = true };
+                    Console.WriteLine($"Configuration: {JsonSerializer.Serialize(_configuration.AsEnumerable(), serializerOptions)}");
+                }
+
+                if (options.Verbose)
+                {
+                    Console.WriteLine($"Password: {options.Password}");
+                    Console.WriteLine($"Verbose:  {options.Verbose}");
+                    Console.WriteLine($"LogLevel: {options.LogLevel}");
+                    Console.WriteLine($"Uri:      {options.Uri}");
+                    Console.WriteLine($"Logging:  {logging}");
                 }
             }
             catch (Exception ex)

@@ -25,6 +25,14 @@ namespace UtilityLib
     public static class CommandExtensions
     {
 
+        public static IServiceCollection AddSettings<TSettings>(this IServiceCollection services)
+            where TSettings : class, new()
+        {
+            services.AddSingleton<TSettings>();
+
+            return services;
+        }
+
         public static IServiceCollection AddCommand<TCommand>(this IServiceCollection services) 
             where TCommand : Command
         {

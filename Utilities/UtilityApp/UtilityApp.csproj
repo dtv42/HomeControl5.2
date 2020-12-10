@@ -33,4 +33,8 @@
     <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Logs\" />
+  </ItemGroup>
+
 </Project>

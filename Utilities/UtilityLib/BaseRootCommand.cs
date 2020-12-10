@@ -44,22 +44,22 @@ namespace UtilityLib
         /// <param name="description">The optional command description.</param>
         public BaseRootCommand(BaseOptions options, ILogger logger, string description = "") : base(description)
         {
+            AddGlobalOption(new Option<bool>(
+                alias: "--verbose",
+                description: "Global verbose option")
+                .Default(options.Verbose)
+            );
+
             AddOption(new Option<bool>(
                 alias: "--settings",
                 description: "Command show settings")
                 .Default(options.Settings)
             );
 
-            AddGlobalOption(new Option<LogEventLevel>(
-                alias: "--loglevel",
-                description: "Global log level option")
-                .Default(options.LogLevel)
-            );
-
-            AddGlobalOption(new Option<bool>(
-                alias: "--verbose",
-                description: "Global verbose option")
-                .Default(false)
+            AddOption(new Option<bool>(
+                alias: "--configuration",
+                description: "Command show configuration")
+                .Default(options.Configuration)
             );
 
             _logger = logger;

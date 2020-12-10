@@ -5,10 +5,10 @@
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>2-12-2020 11:57</created>
+// <created>10-12-2020 16:19</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityApp.Models
+namespace UtilityApp.Options
 {
     /// <summary>
     /// The options for the greet sub command.

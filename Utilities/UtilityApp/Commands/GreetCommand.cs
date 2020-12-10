@@ -12,28 +12,28 @@ namespace UtilityApp
 {
     #region Using Directives
 
-    using System;
     using System.CommandLine;
     using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
 
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
-    using UtilityApp.Models;
+    using UtilityApp.Options;
 
     #endregion
 
     /// <summary>
     /// The "greet" sub command.
     /// </summary>
-    public class GreetCommand : BaseCommand
+    public sealed class GreetCommand : BaseCommand
     {
         #region Private Data Members
 
         /// <summary>
         /// The greeting option (configured using app settings only).
         /// </summary>
-        private string _greeting = string.Empty;
+        private readonly string _greeting = string.Empty;
 
         #endregion
 
@@ -53,50 +53,26 @@ namespace UtilityApp
                 description: "The name of the person to greet.")
             );
 
-            Handler = CommandHandler.Create((GlobalOptions globals, string name) 
-                => HandleCommand(globals, name));
-
-            _greeting = options.Greeting;
-        }
-
-        #endregion Constructors
-
-        #region Private Methods
-
-        /// <summary>
-        /// The command handler for the greet sub command.
-        /// </summary>
-        /// <param name="options">The global options.</param>
-        /// <param name="name">The name option.</param>
-        /// <returns>Zero if sucessful.</returns>
-        private int HandleCommand(GlobalOptions options, string name)
-        {
-            Program.LevelSwitch.MinimumLevel = options.LogLevel;
-
-            try
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, string>((console, options, name) =>
             {
+                logger.LogInformation("Handler()");
+
                 if (options.Verbose)
                 {
-                    Console.WriteLine($"Password: {options.Password}");
-                    Console.WriteLine($"Verbose:  {options.Verbose}");
-                    Console.WriteLine($"LogLevel: {options.LogLevel}");
-                    Console.WriteLine($"Uri:      {options.Uri}");
+                    console.Out.WriteLine($"Password: {options.Password}");
+                    console.Out.WriteLine($"Verbose:  {options.Verbose}");
+                    console.Out.WriteLine($"Uri:      {options.Uri}");
                 }
 
                 _logger.LogDebug($"Greeting:  {_greeting}");
                 _logger.LogDebug($"Name:      {name}");
 
-                Console.WriteLine($"{_greeting} {name}!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return 1;
-            }
+                console.Out.WriteLine($"{_greeting} {name}!");
+            });
 
-            return 0;
+            _greeting = options.Greeting;
         }
 
-        #endregion Private Methods
+        #endregion Constructors
     }
 }

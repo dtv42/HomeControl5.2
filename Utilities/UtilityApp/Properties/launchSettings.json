@@ -2,7 +2,7 @@
   "profiles": {
     "UtilityApp": {
       "commandName": "Project",
-      "commandLineArgs": "--verbose greet",
+      "commandLineArgs": "--help",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

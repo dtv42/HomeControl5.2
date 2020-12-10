@@ -15,22 +15,28 @@ namespace UtilityApp.Commands
     using System;
     using System.CommandLine;
     using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
-    using UtilityApp.Models;
+    using UtilityApp.Options;
 
     #endregion Using Directives
 
     /// <summary>
     /// The application root command.
     /// </summary>
-    public class AppCommand : BaseRootCommand
+    public sealed class AppCommand : BaseRootCommand
     {
         #region Private Data Members
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
 
         /// <summary>
         /// The application configuration instance.
@@ -47,7 +53,8 @@ namespace UtilityApp.Commands
         /// <param name="configuration">The configuration instance.</param>
         /// <param name="options">The root command options.</param>
         /// <param name="logger">The logger instance.</param>
-        public AppCommand(IConfiguration configuration, GlobalOptions options, ILogger<AppCommand> logger) : base(options, logger, "Console app root command.")
+        public AppCommand(IConfiguration configuration, GlobalOptions options, ILogger<AppCommand> logger)
+            : base(options, logger, "Console app root command.")
         {
             AddGlobalOption(new Option<Uri>(
                 alias: "--uri",
@@ -64,78 +71,35 @@ namespace UtilityApp.Commands
                 .Name("STRING")
             );
 
-            AddOption(new Option<bool>(
-                alias: "--logging",
-                description: "Command logging option")
-            );
+            Handler = CommandHandler.Create<IConsole, GlobalOptions>((console, options) =>
+            {
+                logger.LogInformation("Handler()");
 
-            AddOption(new Option<bool>(
-                alias: "--configuration",
-                description: "Command show configuration")
-            );
+                if (options.Settings)
+                {
+                    console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(Program.Settings, _jsonoptions)}");
+                }
 
-            Handler = CommandHandler.Create((bool logging, bool configuration, GlobalOptions options) => HandleCommand(logging, configuration, options));
+                if (options.Configuration)
+                {
+                    console.Out.WriteLine($"Configuration: {JsonSerializer.Serialize(_configuration.AsEnumerable(), _jsonoptions)}");
+                }
+
+                if (options.Verbose)
+                {
+                    console.Out.WriteLine($"Commandline Application: {ExecutableName}");
+                    console.Out.WriteLine();
+                    console.Out.WriteLine($"Password: {options.Password}");
+                    console.Out.WriteLine($"Verbose:  {options.Verbose}");
+                    console.Out.WriteLine($"Uri:      {options.Uri}");
+                }
+
+                Console.Out.WriteLine("Hello Console!");
+            });
 
             _configuration = configuration;
         }
 
         #endregion Constructors
-
-        #region Private Methods
-
-        /// <summary>
-        /// The command handler for the root command.
-        /// </summary>
-        /// <param name="logging">Flag indicating logging test.</param>
-        /// <param name="configuration">Flag indicating to show configuration.</param>
-        /// <param name="options">The global options.</param>
-        /// <returns>Zero if successful.</returns>
-        private int HandleCommand(bool logging, bool configuration, GlobalOptions options)
-        {
-            try
-            {
-                Program.LevelSwitch.MinimumLevel = options.LogLevel;
-
-                if (options.Settings)
-                {
-                    var serializerOptions = new JsonSerializerOptions { WriteIndented = true };
-                    Console.WriteLine($"AppSettings: {JsonSerializer.Serialize(Program.Settings, serializerOptions)}");
-                }
-
-                if (logging)
-                {
-                    _logger.LogInformation("Logging information.");
-                    _logger.LogCritical("Logging critical information.");
-                    _logger.LogDebug("Logging debug information.");
-                    _logger.LogError("Logging error information.");
-                    _logger.LogTrace("Logging trace");
-                    _logger.LogWarning("Logging warning.");
-                }
-
-                if (configuration)
-                {
-                    var serializerOptions = new JsonSerializerOptions { WriteIndented = true };
-                    Console.WriteLine($"Configuration: {JsonSerializer.Serialize(_configuration.AsEnumerable(), serializerOptions)}");
-                }
-
-                if (options.Verbose)
-                {
-                    Console.WriteLine($"Password: {options.Password}");
-                    Console.WriteLine($"Verbose:  {options.Verbose}");
-                    Console.WriteLine($"LogLevel: {options.LogLevel}");
-                    Console.WriteLine($"Uri:      {options.Uri}");
-                    Console.WriteLine($"Logging:  {logging}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return 1;
-            }
-
-            return 0;
-        }
-
-        #endregion Private Methods
     }
 }

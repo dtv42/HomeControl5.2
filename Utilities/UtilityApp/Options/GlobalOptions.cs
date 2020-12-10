@@ -5,10 +5,10 @@
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>9-12-2020 10:19</created>
+// <created>10-12-2020 16:19</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityApp.Models
+namespace UtilityApp.Options
 {
     #region Using Directives
 

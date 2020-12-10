@@ -10,19 +10,24 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityLib
 {
-    #region Using Directives
-
-    using Serilog.Events;
-
-    #endregion Using Directives
-
     /// <summary>
     /// Standard global options.
     /// </summary>
     public class BaseOptions
     {
-        public LogEventLevel LogLevel { get; set; } = LogEventLevel.Fatal;
+        /// <summary>
+        /// Displays verbose application output on console.
+        /// </summary>
         public bool Verbose { get; set; } = false;
+
+        /// <summary>
+        /// Shows application settings (JSON).
+        /// </summary>
         public bool Settings { get; set; } = false;
+
+        /// <summary>
+        /// Shows application configuration (JSON).
+        /// </summary>
+        public bool Configuration { get; set; } = false;
     }
 }

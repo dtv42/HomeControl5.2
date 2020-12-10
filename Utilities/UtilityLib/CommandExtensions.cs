@@ -36,18 +36,7 @@ namespace UtilityLib
         public static IServiceCollection AddCommand<TCommand>(this IServiceCollection services) 
             where TCommand : Command
         {
-            Type grabCommandType = typeof(TCommand);
-            Type commandType = typeof(Command);
-
-            IEnumerable<Type> commands = grabCommandType
-                .Assembly
-                .GetExportedTypes()
-                .Where(x => x.Namespace == grabCommandType.Namespace && commandType.IsAssignableFrom(x));
-
-            foreach (Type command in commands)
-            {
-                services.AddSingleton(commandType, command);
-            }
+            services.AddSingleton(typeof(Command), typeof(TCommand));
 
             return services;
         }
@@ -63,18 +52,7 @@ namespace UtilityLib
             where TCommand : Command
             where TOptions : class
         {
-            Type grabCommandType = typeof(TCommand);
-            Type commandType = typeof(Command);
-
-            IEnumerable<Type> commands = grabCommandType
-                .Assembly
-                .GetExportedTypes()
-                .Where(x => x.Namespace == grabCommandType.Namespace && commandType.IsAssignableFrom(x));
-
-            foreach (Type command in commands)
-            {
-                services.AddSingleton(commandType, command);
-            }
+            services.AddSingleton(typeof(Command), typeof(TCommand));
 
             services.AddSingleton(sp =>
             {
@@ -95,18 +73,7 @@ namespace UtilityLib
         public static IServiceCollection AddRootCommand<TCommand>(this IServiceCollection services)
             where TCommand : RootCommand
         {
-            Type grabCommandType = typeof(TCommand);
-            Type commandType = typeof(RootCommand);
-
-            IEnumerable<Type> commands = grabCommandType
-                .Assembly
-                .GetExportedTypes()
-                .Where(x => x.Namespace == grabCommandType.Namespace && commandType.IsAssignableFrom(x));
-
-            foreach (Type command in commands)
-            {
-                services.AddSingleton(commandType, command);
-            }
+            services.AddSingleton(typeof(RootCommand), typeof(TCommand));
 
             return services;
         }
@@ -122,18 +89,7 @@ namespace UtilityLib
             where TCommand : RootCommand
             where TOptions : class
         {
-            Type grabCommandType = typeof(TCommand);
-            Type commandType = typeof(RootCommand);
-
-            IEnumerable<Type> commands = grabCommandType
-                .Assembly
-                .GetExportedTypes()
-                .Where(x => x.Namespace == grabCommandType.Namespace && commandType.IsAssignableFrom(x));
-
-            foreach (Type command in commands)
-            {
-                services.AddSingleton(commandType, command);
-            }
+            services.AddSingleton(typeof(RootCommand), typeof(TCommand));
 
             services.AddSingleton(sp =>
             {

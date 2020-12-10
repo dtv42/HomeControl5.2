@@ -12,12 +12,6 @@ namespace UtilityApp
 {
     #region Using Directives
 
-    using System;
-    using System.CommandLine;
-    using System.CommandLine.Builder;
-    using System.CommandLine.Parsing;
-    using System.Diagnostics;
-    using System.Globalization;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Configuration;
@@ -26,10 +20,14 @@ namespace UtilityApp
 
     using Serilog;
     using Serilog.Core;
+    using Serilog.Events;
+    using Serilog.Sinks.SystemConsole.Themes;
 
     using UtilityLib;
     using UtilityApp.Commands;
     using UtilityApp.Models;
+    using UtilityApp.Options;
+    using System.CommandLine;
 
     #endregion
 
@@ -41,9 +39,10 @@ namespace UtilityApp
         public static AppSettings Settings { get; set; } = new AppSettings();
 
         /// <summary>
-        /// The (Serilog) logging level switch instance.
+        /// The (Serilog) logging level switch instances.
         /// </summary>
-        public static LoggingLevelSwitch LevelSwitch { get; set; } = new LoggingLevelSwitch();
+        public static LoggingLevelSwitch ConsoleSwitch { get; set; } = new LoggingLevelSwitch();
+        public static LoggingLevelSwitch LogFileSwitch { get; set; } = new LoggingLevelSwitch();
 
         /// <summary>
         /// The entry point for the program.
@@ -53,64 +52,48 @@ namespace UtilityApp
         public static async Task<int> Main(string[] args)
         {
             // Create host using serilog, adding commands and options services.
-            var host = Host.CreateDefaultBuilder()
-                .ConfigureServices(services =>
+            return await Host.CreateDefaultBuilder()
+                .ConfigureAppConfiguration(config =>
                 {
-                    services.AddCommandOptions<GreetCommand, GreetOptions>();
-                    services.AddRootCommandOptions<AppCommand, GlobalOptions>();
+                    config.AddJsonFile("testdata.json", optional: false, reloadOnChange: false)
+                        .Build()
+                        .GetSection("AppSettings").Bind(Settings);
                 })
-                .UseSerilog()
-                .Build();
+                .ConfigureServices((context, services) =>
+                {
+                    services
+                        // Add application specific settings.
+                        .AddSingleton(context.Configuration.GetSection("AppSettings").Get<AppSettings>().ValidateAndThrow())
+                        .AddSingleton(context.Configuration.GetSection("TestData").Get<Testdata>().ValidateAndThrow())
+                        // Add commands and options.
+                        .AddCommand<LogCommand>()
+                        .AddCommand<AsyncCommand>()
+                        .AddCommand<SettingsCommand>()
+                        .AddCommandOptions<GreetCommand, GreetOptions>()
+                        .AddCommandOptions<PropertyCommand, PropertyOptions>()
+                        .AddCommandOptions<TestdataCommand, TestdataOptions>()
+                        .AddCommandOptions<ValidateCommand, ValidateOptions>()
+                        .AddRootCommandOptions<AppCommand, GlobalOptions>();
+                })
+                .UseSerilog((context, logger) =>
+                {
+                    ConsoleSwitch.MinimumLevel = context.Configuration.GetValue<LogEventLevel>("Serilog:LevelSwitches:$ConsoleSwitch");
+                    LogFileSwitch.MinimumLevel = context.Configuration.GetValue<LogEventLevel>("Serilog:LevelSwitches:$FileSwitch");
 
-            // Binding application settings.
-            var serviceProvider = host.Services;
-            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-            configuration.GetSection("AppSettings").Bind(Settings);
-
-            // Configure Serilog logger.
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.ControlledBy(LevelSwitch)
-                .WriteTo.File("Logs/log.txt", rollingInterval: RollingInterval.Day)
-                .WriteTo.Console()
-                .CreateLogger();
-
-            // Setup command line builder and adding sub commands
-            var rootCommand = serviceProvider.GetRequiredService<RootCommand>();
-            var commandLineBuilder = new CommandLineBuilder(rootCommand);
-
-            foreach (Command command in serviceProvider.GetServices<Command>())
-            {
-                commandLineBuilder.AddCommand(command);
-            }
-
-            // Setup command line parser.
-            var parser = commandLineBuilder
-                .UseParseErrorReporting()
-                .UseVersionOption()
-                .UseDefaults()
-                .Build();
-
-            // Setup application environment.
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-
-            // Run commandline application.
-            try
-            {
-                return await parser.InvokeAsync(args).ConfigureAwait(false);
-            }
-            catch(Exception ex)
-            {
-                Log.Fatal(ex, "Application terminated unexpectedly");
-                return -1;
-            }
-            finally
-            {
-                stopWatch.Stop();
-                Console.WriteLine($"Time elapsed {stopWatch.Elapsed}");
-                Log.CloseAndFlush();
-            }
+                    logger.ReadFrom.Configuration(context.Configuration)
+                          .Enrich.FromLogContext()
+                          .WriteTo.File(
+                              "Logs/log-.log",
+                              levelSwitch: LogFileSwitch,
+                              rollingInterval: RollingInterval.Day,
+                              outputTemplate: "{Timestamp: HH:mm:ss.fff zzz} {SourceContext} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                          .WriteTo.Console(
+                              levelSwitch: ConsoleSwitch,
+                              theme: AnsiConsoleTheme.Code,
+                              outputTemplate: "{Timestamp: HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}");
+                })
+                .Build()
+                .RunCommandLineAsync(args);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="AsyncCommand.cs" company="DTV-Online">
+// <copyright file="LogCommand.cs" company="DTV-Online">
 //   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
@@ -13,41 +13,42 @@ namespace UtilityApp.Commands
     #region Using Directives
 
     using System.CommandLine;
-    using System.CommandLine.Invocation;
     using System.CommandLine.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using System.CommandLine.Invocation;
 
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
+
+    using Serilog.Events;
 
     using UtilityLib;
 
     #endregion Using Directives
 
     /// <summary>
-    ///  Sample of a command using async execution. The command simply waits for the specified delay.
+    ///  Sample of a command throwing an exception.
     /// </summary>
-    public sealed class AsyncCommand : BaseCommand
+    public sealed class ErrorCommand : BaseCommand
     {
         #region Constructors
 
         /// <summary>
-        ///  Initializes a new instance of the <see cref="AsyncCommand"/> class.
+        ///  Initializes a new instance of the <see cref="ErrorCommand"/> class.
         /// </summary>
         /// <param name="logger"></param>
-        public AsyncCommand(ILogger<AsyncCommand> logger)
-            : base(logger, "async", "A sample dotnet console application - async command")
+        public ErrorCommand(ILogger<ErrorCommand> logger)
+            : base(logger, "error", "A sample dotnet console application - error command")
         {
-            logger.LogDebug("AsyncCommand()");
+            logger.LogDebug("ErrorCommand()");
 
             // Setup command options.
-            AddOption(new Option<int?>(
-                aliases: new string[] { "-d", "--delay" },
-                description: "the delay in seconds")
-                .Default(10));
+            AddOption(new Option<bool>(
+                aliases: new string[] { "-x", "--exception" }, 
+                description: "throw an exception")
+            );
 
             // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, CancellationToken, bool, int>(async (console, token, verbose, delay) =>
+            Handler = CommandHandler.Create<IConsole, bool, bool>((console, verbose, exception) =>
             {
                 logger.LogDebug("Handler()");
 
@@ -57,17 +58,14 @@ namespace UtilityApp.Commands
                     console.Out.WriteLine();
                 }
 
-                try
+                if (exception)
                 {
-                    console.Out.WriteLine($"Waiting for {delay} seconds...");
-                    await Task.Delay(1000 * delay, token);
-                    return (int)ExitCodes.SuccessfullyCompleted;
+                    throw new System.Exception("Application exception thrown");
                 }
-                catch (TaskCanceledException tcx)
-                {
-                    logger.LogDebug(tcx, "Operation canceled");
-                    return (int)ExitCodes.OperationCanceled;
-                }
+
+                console.Out.WriteLine();
+
+                return (int)ExitCodes.NotSuccessfullyCompleted;
             });
         }
 

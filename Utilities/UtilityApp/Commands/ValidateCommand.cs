@@ -55,12 +55,12 @@ namespace UtilityApp.Commands
             AddOption(new Option<string>("-x", "regex value"            ).Name("String").Regex(@"^[a-zA-Z\.\-_]+@([a-zA-Z\.\-_]+\.)+[a-zA-Z]{2,4}$"));
             AddOption(new Option<string>("-a", "IP address value"       ).Name("Address").IPAddress());
             AddOption(new Option<string>("-p", "IP endpoint value"      ).Name("Endpoint").IPEndpoint());
-            AddOption(new Option<Uri>   ("-u", "URI value"              ).Name("URI").Uri());
+            AddOption(new Option<string>("-u", "URI value"              ).Name("URI").Uri());
 
             // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, bool, ValidateOptions>((console, verbose, options) =>
             {
-                logger.LogInformation("Handler()");
+                logger.LogDebug("Handler()");
 
                 if (verbose)
                 {
@@ -86,7 +86,7 @@ namespace UtilityApp.Commands
 
                 console.Out.WriteLine();
 
-                return ExitCodes.SuccessfullyCompleted;
+                return (int)ExitCodes.SuccessfullyCompleted;
             });
         }
 

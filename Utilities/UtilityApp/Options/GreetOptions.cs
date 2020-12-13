@@ -11,7 +11,8 @@
 namespace UtilityApp.Options
 {
     /// <summary>
-    /// The options for the greet sub command.
+    /// The options for the greet sub command. Note that the Greeting is preset using the AppSettings.
+    /// The Name option is set using the commandline argument (<see cref="GreetCommand"/>).
     /// </summary>
     public class GreetOptions
     {

@@ -24,6 +24,11 @@ namespace UtilityApp.Commands
     using UtilityApp.Models;
     using System.Net;
     using UtilityApp.Options;
+    using System.CommandLine.Parsing;
+    using Microsoft.Extensions.Configuration;
+    using System.Linq;
+    using System.ComponentModel.DataAnnotations;
+    using System.Collections.Generic;
 
     #endregion Using Directives
 
@@ -44,79 +49,91 @@ namespace UtilityApp.Commands
         ///  Initializes a new instance of the <see cref="TestdataCommand"/> class.
         ///  Note that the code option is hidden in the help output (see https://github.com/dotnet/command-line-api/issues/629).
         /// </summary>
-        /// <param name="testdata"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public TestdataCommand(Testdata testdata, ILogger<TestdataCommand> logger)
+        public TestdataCommand(IConfiguration configuration, ILogger<TestdataCommand> logger)
             : base(logger, "testdata", "A dotnet console application sub command - testdata command")
         {
             logger.LogDebug("TestCommand()");
 
-            // Setup command options.
-            AddOption(new Option<bool>          (new string[] { "-j", "--json"     }, "show json output"));
-            AddOption(new Option<bool>          (new string[] { "-n", "--new"      }, "show new data"));
-            AddOption(new Option<Guid>          (new string[] { "-g", "--guid"     }, "specify GUID"));
-            AddOption(new Option<string>        (new string[] { "-a", "--address"  }, "specify IP address").IPAddress());
-            AddOption(new Option<string>        (new string[] { "-e", "--endpoint" }, "specify IP endpoint").IPEndpoint());
-            AddOption(new Option<Uri>           (new string[] { "-u", "--uri"      }, "specify absolute URI").Uri());
-            AddOption(new Option<HttpStatusCode>(new string[] { "-c", "--code"     }, "specify HTTP status code").IsHidden());
+            // Get test data from configuration.
+            TestData testdata = new TestData();
+            configuration.GetSection("TestData").Bind(testdata);
+
+            // Setup command options. The option variables are used to interpret the commandline parser results.
+            var dOption = new Option<bool>          (new string[] { "-d", "--data"     }, "show new data");
+            var vOption = new Option<int>           (new string[] { "-v", "--value"    }, "specify integer value[0..60]").Default(testdata.Value)   .Range(0, 60);
+            var nOption = new Option<string>        (new string[] { "-n", "--name"     }, "specify name (max.10)")       .Default(testdata.Name)    .StringLength(10);
+            var gOption = new Option<string>        (new string[] { "-g", "--guid"     }, "specify GUID")                .Default(testdata.Guid)    .Guid();
+            var aOption = new Option<string>        (new string[] { "-a", "--address"  }, "specify IP address")          .Default(testdata.Address) .IPAddress();
+            var eOption = new Option<string>        (new string[] { "-e", "--endpoint" }, "specify IP endpoint")         .Default(testdata.Endpoint).IPEndpoint();
+            var uOption = new Option<string>        (new string[] { "-u", "--uri"      }, "specify absolute URI")        .Default(testdata.Uri)     .Uri();
+            var cOption = new Option<HttpStatusCode>(new string[] { "-c", "--code"     }, "specify HTTP status code")    .Default(testdata.Code)    .IsHidden();
+
+            AddOption(dOption);
+            AddOption(vOption);
+            AddOption(nOption);
+            AddOption(gOption);
+            AddOption(aOption);
+            AddOption(eOption);
+            AddOption(uOption);
+            AddOption(cOption);
 
             // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, bool, TestdataOptions>((console, verbose, options) =>
+            Handler = CommandHandler.Create<IConsole, ParseResult, bool, TestdataOptions>((console, result, verbose, options) =>
             {
-                logger.LogInformation("Handler()");
+                logger.LogDebug("Handler()");
+
+                // Validate the testdata.
+                testdata.ValidateAndThrow();
 
                 if (verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
-                    console.Out.WriteLine($"Console Log level: {Program.ConsoleSwitch.MinimumLevel}");
-                    console.Out.WriteLine($"File Log level: {Program.LogFileSwitch.MinimumLevel}");
-                    console.Out.WriteLine();
-                }
-
-                if (options.NewData)
-                {
-                    var data = new Testdata();
-
-                    console.Out.WriteLine($"TestData():");
-                    console.Out.WriteLine($"    Value:    {data.Value}");
-                    console.Out.WriteLine($"    Name:     {data.Name}");
-                    console.Out.WriteLine($"    Uuid:     {data.Uuid}");
-                    console.Out.WriteLine($"    Address:  {data.Address}");
-                    console.Out.WriteLine($"    Endpoint: {data.Endpoint}");
-                    console.Out.WriteLine($"    Uri:      {data.Uri}");
-                    console.Out.WriteLine($"    Code:     {data.Code}");
-
-                    console.Out.WriteLine();
-                }
-
-                if (options.Json)
-                {
                     console.Out.WriteLine($"TestData: {JsonSerializer.Serialize(testdata, _jsonoptions)}");
                     console.Out.WriteLine();
                 }
 
-                console.Out.WriteLine($"TestData:");
-                console.Out.WriteLine($"    Value:    {testdata.Value}");
-                console.Out.WriteLine($"    Name:     {testdata.Name}");
-                console.Out.WriteLine($"    Uuid:     {testdata.Uuid}");
-                console.Out.WriteLine($"    Address:  {testdata.Address}");
-                console.Out.WriteLine($"    Endpoint: {testdata.Endpoint}");
-                console.Out.WriteLine($"    Uri:      {testdata.Uri}");
-                console.Out.WriteLine($"    Code:     {testdata.Code}");
+                if (options.Data)
+                {
+                    var data = new TestData();
 
+                    console.Out.WriteLine($"New Data():");
+                    console.Out.WriteLine($"    Value:    {data.Value}");
+                    console.Out.WriteLine($"    Name:     {data.Name}");
+                    console.Out.WriteLine($"    Guid:     {data.Guid}");
+                    console.Out.WriteLine($"    Address:  {data.Address}");
+                    console.Out.WriteLine($"    Endpoint: {data.Endpoint}");
+                    console.Out.WriteLine($"    Uri:      {data.Uri}");
+                    console.Out.WriteLine($"    Code:     {data.Code}");
+                    console.Out.WriteLine();
+                }
+
+                console.Out.WriteLine($"Options:");
+                console.Out.WriteLine($"    Data:     {options.Data}");
+                console.Out.WriteLine($"    Value:    {options.Value}");
+                console.Out.WriteLine($"    Name:     {options.Name}");
+                console.Out.WriteLine($"    Guid:     {options.Guid}");
+                console.Out.WriteLine($"    Address:  {options.Address}");
+                console.Out.WriteLine($"    Endpoint: {options.Endpoint}");
+                console.Out.WriteLine($"    Uri:      {options.Uri}");
+                console.Out.WriteLine($"    Code:     {options.Code}");
                 console.Out.WriteLine();
 
                 console.Out.WriteLine($"CommandLine:");
 
-                if (options.Guid.HasValue)       console.Out.WriteLine($"    Guid:     {options.Guid}");
-                if (!(options.Address is null))  console.Out.WriteLine($"    Address:  {options.Address}");
-                if (!(options.Endpoint is null)) console.Out.WriteLine($"    Endpoint: {options.Endpoint}");
-                if (!(options.Uri is null))      console.Out.WriteLine($"    Uri:      {options.Uri}");
-                if (!(options.Code is null))     console.Out.WriteLine($"    Code:     {options.Code}");
+                if (result.Has(dOption)) { console.Out.WriteLine($"    Data:     {options.Data}");    }
+                if (result.Has(vOption)) { console.Out.WriteLine($"    Value:    {options.Value} ");  }
+                if (result.Has(nOption)) { console.Out.WriteLine($"    Name:     {options.Name}");    }
+                if (result.Has(gOption)) { console.Out.WriteLine($"    Guid:     {options.Guid}");    }
+                if (result.Has(aOption)) { console.Out.WriteLine($"    Address:  {options.Address}"); }
+                if (result.Has(eOption)) { console.Out.WriteLine($"    Endpoint: {options.Endpoint}");}
+                if (result.Has(uOption)) { console.Out.WriteLine($"    Uri:      {options.Uri}");     }
+                if (result.Has(cOption)) { console.Out.WriteLine($"    Code:     {options.Code}");    }
 
                 console.Out.WriteLine();
 
-                return ExitCodes.SuccessfullyCompleted;
+                return (int)ExitCodes.SuccessfullyCompleted;
             });
         }
 

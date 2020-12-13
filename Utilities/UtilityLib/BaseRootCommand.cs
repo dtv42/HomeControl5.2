@@ -46,19 +46,19 @@ namespace UtilityLib
         {
             AddGlobalOption(new Option<bool>(
                 alias: "--verbose",
-                description: "Global verbose option")
+                description: "global verbose option")
                 .Default(options.Verbose)
             );
 
             AddOption(new Option<bool>(
                 alias: "--settings",
-                description: "Command show settings")
+                description: "command show settings")
                 .Default(options.Settings)
             );
 
             AddOption(new Option<bool>(
                 alias: "--configuration",
-                description: "Command show configuration")
+                description: "command show configuration")
                 .Default(options.Configuration)
             );
 

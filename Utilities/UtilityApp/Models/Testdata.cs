@@ -1,26 +1,20 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="Testdata.cs" company="DTV-Online">
-//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
-// </copyright>
-// <license>
-//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
-// </license>
-// <created>10-12-2020 16:36</created>
-// <author>Peter Trimmel</author>
-// --------------------------------------------------------------------------------------------------------------------
-namespace UtilityApp.Models
+﻿namespace UtilityApp.Models
 {
     #region Using Directives
 
     using System;
     using System.ComponentModel.DataAnnotations;
+    using System.Net;
     using System.Text.Json.Serialization;
 
     using UtilityLib;
 
     #endregion Using Directives
 
-    public class Testdata
+    /// <summary>
+    /// Class holding various test data fields using data annotation. 
+    /// </summary>
+    public class TestData
     {
         [Range(0, 60)]
         public int Value { get; set; } = 42;
@@ -28,7 +22,8 @@ namespace UtilityApp.Models
         [StringLength(10)]
         public string Name { get; set; } = "Data";
 
-        public Guid Uuid { get; set; } = new Guid();
+        [Guid]
+        public string Guid { get; set; } = "{00000000-0000-0000-0000-000000000000}";
 
         [IPAddress]
         public string Address { get; set; } = "0.0.0.0";

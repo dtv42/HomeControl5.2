@@ -15,35 +15,19 @@ namespace UtilityApp
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
 
     using Serilog;
-    using Serilog.Core;
-    using Serilog.Events;
     using Serilog.Sinks.SystemConsole.Themes;
 
     using UtilityLib;
     using UtilityApp.Commands;
-    using UtilityApp.Models;
     using UtilityApp.Options;
-    using System.CommandLine;
 
     #endregion
 
     internal static class Program
     {
-        /// <summary>
-        /// The application settings instance.
-        /// </summary>
-        public static AppSettings Settings { get; set; } = new AppSettings();
-
-        /// <summary>
-        /// The (Serilog) logging level switch instances.
-        /// </summary>
-        public static LoggingLevelSwitch ConsoleSwitch { get; set; } = new LoggingLevelSwitch();
-        public static LoggingLevelSwitch LogFileSwitch { get; set; } = new LoggingLevelSwitch();
-
         /// <summary>
         /// The entry point for the program.
         /// </summary>
@@ -53,21 +37,20 @@ namespace UtilityApp
         {
             // Create host using serilog, adding commands and options services.
             return await Host.CreateDefaultBuilder()
+                .ConfigureHostConfiguration(config =>
+                {
+
+                })
                 .ConfigureAppConfiguration(config =>
                 {
-                    config.AddJsonFile("testdata.json", optional: false, reloadOnChange: false)
-                        .Build()
-                        .GetSection("AppSettings").Bind(Settings);
+                    config.AddJsonFile("testdata.json", optional: false, reloadOnChange: false);
                 })
                 .ConfigureServices((context, services) =>
                 {
                     services
-                        // Add application specific settings.
-                        .AddSingleton(context.Configuration.GetSection("AppSettings").Get<AppSettings>().ValidateAndThrow())
-                        .AddSingleton(context.Configuration.GetSection("TestData").Get<Testdata>().ValidateAndThrow())
-                        // Add commands and options.
-                        .AddCommand<LogCommand>()
+                        .AddCommand<ErrorCommand>()
                         .AddCommand<AsyncCommand>()
+                        .AddCommand<LoggingCommand>()
                         .AddCommand<SettingsCommand>()
                         .AddCommandOptions<GreetCommand, GreetOptions>()
                         .AddCommandOptions<PropertyCommand, PropertyOptions>()
@@ -75,20 +58,19 @@ namespace UtilityApp
                         .AddCommandOptions<ValidateCommand, ValidateOptions>()
                         .AddRootCommandOptions<AppCommand, GlobalOptions>();
                 })
+                .ConfigureLogging((context, logger) =>
+                {
+
+                })
                 .UseSerilog((context, logger) =>
                 {
-                    ConsoleSwitch.MinimumLevel = context.Configuration.GetValue<LogEventLevel>("Serilog:LevelSwitches:$ConsoleSwitch");
-                    LogFileSwitch.MinimumLevel = context.Configuration.GetValue<LogEventLevel>("Serilog:LevelSwitches:$FileSwitch");
-
                     logger.ReadFrom.Configuration(context.Configuration)
                           .Enrich.FromLogContext()
                           .WriteTo.File(
                               "Logs/log-.log",
-                              levelSwitch: LogFileSwitch,
                               rollingInterval: RollingInterval.Day,
                               outputTemplate: "{Timestamp: HH:mm:ss.fff zzz} {SourceContext} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                           .WriteTo.Console(
-                              levelSwitch: ConsoleSwitch,
                               theme: AnsiConsoleTheme.Code,
                               outputTemplate: "{Timestamp: HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}");
                 })

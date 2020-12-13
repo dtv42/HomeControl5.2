@@ -2,7 +2,7 @@
   "profiles": {
     "UtilityApp": {
       "commandName": "Project",
-      "commandLineArgs": "--help",
+      "commandLineArgs": "property -p",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

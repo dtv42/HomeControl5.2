@@ -13,32 +13,19 @@ namespace UtilityApp.Options
     #region Using Directives
 
     using System;
+    using System.ComponentModel.DataAnnotations;
     using System.Net;
-
+    using System.Text.Json.Serialization;
+    using UtilityApp.Models;
     using UtilityLib;
 
     #endregion
 
     /// <summary>
-    ///  A collection of options for the validate command.
+    ///  A collection of options for the validate command. The testdata fields are used as options.
     /// </summary>
-    internal class TestdataOptions
+    internal class TestdataOptions : TestData
     {
-        public bool Json { get; set; }
-
-        public bool NewData { get; set; }
-
-        public Guid? Guid { get; set; }
-
-        [IPAddress]
-        public string? Address { get; set; }
-
-        [IPEndPoint]
-        public string? Endpoint { get; set; }
-
-        [Uri]
-        public string? Uri { get; set; }
-
-        public HttpStatusCode? Code { get; set; }
+        public bool Data { get; set; }
     }
 }

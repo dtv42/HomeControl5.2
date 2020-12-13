@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="PropertyOptions.cs" company="DTV-Online">
-//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
+//   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>10-12-2020 17:09</created>
+// <created>13-5-2020 17:37</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityApp.Options
@@ -18,45 +18,36 @@ namespace UtilityApp.Options
         #region Constructors
 
         /// <summary>
-        ///  The constructor mapps the input parameters to the properties.
+        ///  The constructor maps the input parameters to the properties.
         /// </summary>
-        /// <param name="pn"></param>
-        /// <param name="pv"></param>
         /// <param name="p"></param>
         /// <param name="s"></param>
         /// <param name="a"></param>
         /// <param name="l"></param>
         /// <param name="d"></param>
         /// <param name="v"></param>
-        public PropertyOptions(string name = "",
-                               string value = "", 
-                               bool p = false,
-                               bool s = false,
-                               bool a = false,
-                               bool l = false,
-                               bool d = false,
-                               bool v = false)
+        public PropertyOptions(bool properties = false,
+                               bool simple     = false,
+                               bool array      = false,
+                               bool list       = false,
+                               bool dictionary = false,
+                               bool value      = false)
         {
-            PropertyName = name;
-            PropertyValue = value;
-
-            ShowAll = p;
-            ShowSimple = s;
-            ShowArrays = a;
-            ShowLists = l;
-            ShowDictionaries = d;
-            ShowValue = v;
+            All           = properties;
+            Simple        = simple;
+            Arrays        = array;
+            Lists         = list;
+            Dictionaries  = dictionary;
+            Value         = value;
         }
 
         #endregion
 
-        public string PropertyName { get; set; }
-        public string PropertyValue { get; set; }
-        public bool ShowAll { get; set; }
-        public bool ShowSimple { get; set; }
-        public bool ShowArrays { get; set; }
-        public bool ShowLists { get; set; }
-        public bool ShowDictionaries { get; set; }
-        public bool ShowValue { get; set; }
+        public bool All             { get; set; }
+        public bool Simple          { get; set; }
+        public bool Arrays          { get; set; }
+        public bool Lists           { get; set; }
+        public bool Dictionaries    { get; set; }
+        public bool Value           { get; set; }
     }
 }

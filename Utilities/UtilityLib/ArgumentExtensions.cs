@@ -155,6 +155,20 @@ namespace UtilityLib
             return argument;
         }
 
+        public static TArgument Guid<TArgument>(this TArgument argument)
+            where TArgument : Argument
+        {
+            argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<string>();
+                if (value is null) return $"{r.Symbol.Name} value is null";
+                if (System.Guid.TryParse(value, out _)) return null;
+                return $"{r.Symbol.Name} value is not a valid GUID";
+            });
+
+            return argument;
+        }
+
         public static TArgument IPAddress<TArgument>(this TArgument argument)
             where TArgument : Argument
         {

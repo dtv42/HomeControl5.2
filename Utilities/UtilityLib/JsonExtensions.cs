@@ -31,6 +31,8 @@ namespace UtilityLib
             {
                 var options = new JsonSerializerOptions() { WriteIndented = true };
                 options.Converters.Add(new TimeSpanConverter());
+                options.Converters.Add(new IPAddressConverter());
+                options.Converters.Add(new IPEndPointConverter());
                 options.Converters.Add(new SpecialDoubleConverter());
                 options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
@@ -48,6 +50,8 @@ namespace UtilityLib
             options.WriteIndented = true;
             options.PropertyNamingPolicy = null;
             options.Converters.Add(new TimeSpanConverter());
+            options.Converters.Add(new IPAddressConverter());
+            options.Converters.Add(new IPEndPointConverter());
             options.Converters.Add(new SpecialDoubleConverter());
             options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         }

@@ -21,12 +21,12 @@ namespace UtilityLib
         public bool Verbose { get; set; } = false;
 
         /// <summary>
-        /// Shows application settings (JSON).
+        /// Shows application settings (JSON) on console.
         /// </summary>
         public bool Settings { get; set; } = false;
 
         /// <summary>
-        /// Shows application configuration (JSON).
+        /// Shows application configuration (JSON) on console.
         /// </summary>
         public bool Configuration { get; set; } = false;
     }

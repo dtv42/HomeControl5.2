@@ -10,8 +10,12 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityLib
 {
+    #region Using Directives
+
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
+
+    #endregion Using Directives
 
     public static class ValidationExtensions
     {

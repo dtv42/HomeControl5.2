@@ -26,6 +26,7 @@ namespace UtilityApp.Commands
     using UtilityLib;
     using UtilityApp.Models;
     using UtilityApp.Options;
+    using Microsoft.Extensions.Configuration;
 
     #endregion Using Directives
 
@@ -46,21 +47,20 @@ namespace UtilityApp.Commands
         /// <summary>
         ///  Initializes a new instance of the <see cref="PropertyCommand"/> class.
         /// </summary>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public PropertyCommand(ILogger<PropertyCommand> logger)
+        public PropertyCommand(IConfiguration configuration, ILogger<PropertyCommand> logger)
             : base(logger, "property", "A dotnet console application sub command - property command")
         {
             logger.LogDebug("PropertyCommand()");
 
+            // Get settings data from configuration.
+            SettingsData settings = new SettingsData();
+            configuration.GetSection("AppSettings:Data").Bind(settings);
+
             // Setup command arguments and options.
-            AddArgument(new Argument<string>("Name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
-            AddArgument(new Argument<string>("Value", "The property value.").Arity(ArgumentArity.ZeroOrOne));
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
+            AddArgument(new Argument<string>("value", "The property value.").Arity(ArgumentArity.ZeroOrOne));
 
             AddOption(new Option<bool>(new string[] { "-p", "--properties"   }, "show all properties"));
             AddOption(new Option<bool>(new string[] { "-s", "--simple"       }, "show simple properties"));
@@ -83,27 +83,26 @@ namespace UtilityApp.Commands
             });
 
             // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, bool, PropertyOptions>((console, verbose, options) =>
+            Handler = CommandHandler.Create<IConsole, bool, string, string, PropertyOptions>
+                ((console, verbose, name, value, options) =>
             {
-                logger.LogInformation("Handler()");
-                var settings = Program.Settings;
+                logger.LogDebug("Handler()");
 
                 if (verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
-                    console.Out.WriteLine($"Console Log level: {Program.ConsoleSwitch.MinimumLevel}");
-                    console.Out.WriteLine($"File Log level: {Program.LogFileSwitch.MinimumLevel}");
+                    console.Out.WriteLine();
                     console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(settings, _jsonoptions)}");
                     console.Out.WriteLine();
                 }
 
-                if (options.PropertyName is null)
+                if (name is null)
                 {
-                    var properties = typeof(AppSettings).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    var properties = typeof(SettingsData).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
                     foreach (var info in properties)
                     {
-                        if ((options.ShowAll || options.ShowArrays) && (info?.PropertyType.IsArray ?? false) && (info.GetValue(settings) is Array))
+                        if ((options.All || options.Simple) && (info?.PropertyType.IsArray ?? false) && (info.GetValue(settings) is Array))
                         {
                             console.Out.WriteLine($"Property {info.Name}");
                             console.Out.WriteLine($"    CanRead:       {info.CanRead}");
@@ -112,18 +111,18 @@ namespace UtilityApp.Commands
                             console.Out.WriteLine($"    PropertyType:  {info.PropertyType}");
                             console.Out.WriteLine($"    MemberType:    {info.MemberType}");
 
-                            Array? value = (Array?)info.GetValue(settings);
-                            console.Out.WriteLine($"    Array:         [{value?.Length}]");
+                            Array? array = (Array?)info.GetValue(settings);
+                            console.Out.WriteLine($"    Array:         [{array?.Length}]");
 
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
-                                for (int i = 0; i < value?.Length; ++i)
+                                for (int i = 0; i < array?.Length; ++i)
                                 {
                                     console.Out.WriteLine($"    Value[{i}]:      {((Array?)info?.GetValue(settings))?.GetValue(i)}");
                                 }
                             }
                         }
-                        else if ((options.ShowAll || options.ShowLists) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IList))
+                        else if ((options.All || options.Simple) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IList))
                         {
                             console.Out.WriteLine($"Property {info.Name}");
                             console.Out.WriteLine($"    CanRead:       {info.CanRead}");
@@ -132,18 +131,18 @@ namespace UtilityApp.Commands
                             console.Out.WriteLine($"    PropertyType:  {info.PropertyType}");
                             console.Out.WriteLine($"    MemberType:    {info.MemberType}");
 
-                            IList? value = (IList?)info.GetValue(settings);
-                            console.Out.WriteLine($"    List:          [{value?.Count}]");
+                            IList? list = (IList?)info.GetValue(settings);
+                            console.Out.WriteLine($"    List:          [{list?.Count}]");
 
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
-                                for (int i = 0; i < value?.Count; ++i)
+                                for (int i = 0; i < list?.Count; ++i)
                                 {
                                     console.Out.WriteLine($"    Value[{i}]:      {((IList?)info?.GetValue(settings))?[i]}");
                                 }
                             }
                         }
-                        else if ((options.ShowAll || options.ShowDictionaries) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IDictionary))
+                        else if ((options.All || options.Dictionaries) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IDictionary))
                         {
                             console.Out.WriteLine($"Property {info.Name}");
                             console.Out.WriteLine($"    CanRead:       {info.CanRead}");
@@ -152,15 +151,14 @@ namespace UtilityApp.Commands
                             console.Out.WriteLine($"    PropertyType:  {info.PropertyType}");
                             console.Out.WriteLine($"    MemberType:    {info.MemberType}");
 
-                            IDictionary? value = (IDictionary?)info.GetValue(settings);
-                            console.Out.WriteLine($"    Dictionary:    [{value?.Count}]");
+                            IDictionary? dictionary = (IDictionary?)info.GetValue(settings);
+                            console.Out.WriteLine($"    Dictionary:    [{dictionary?.Count}]");
 
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
-                                var dictionary = (IDictionary?)info?.GetValue(settings);
                                 int i = 0;
 
-                                if (!(dictionary is null))
+                                if (dictionary is not null)
                                 {
                                     foreach (DictionaryEntry? item in dictionary)
                                     {
@@ -169,7 +167,7 @@ namespace UtilityApp.Commands
                                 }
                             }
                         }
-                        else if ((options.ShowAll || options.ShowSimple) && !(info?.PropertyType.IsArray ?? false) && !(info?.PropertyType.IsGenericType ?? false))
+                        else if ((options.All || options.Simple) && !(info?.PropertyType.IsArray ?? false) && !(info?.PropertyType.IsGenericType ?? false))
                         {
                             console.Out.WriteLine($"Property {info?.Name}");
                             console.Out.WriteLine($"    CanRead:       {info?.CanRead}");
@@ -178,7 +176,7 @@ namespace UtilityApp.Commands
                             console.Out.WriteLine($"    PropertyType:  {info?.PropertyType}");
                             console.Out.WriteLine($"    MemberType:    {info?.MemberType}");
 
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
                                 console.Out.WriteLine($"    Value:         {info?.GetValue(settings)}");
                             }
@@ -189,14 +187,14 @@ namespace UtilityApp.Commands
                 }
                 else
                 {
-                    var info = typeof(AppSettings).GetProperty(options.PropertyName, BindingFlags.Public | BindingFlags.Instance);
+                    var info = typeof(SettingsData).GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
 
                     if (info is null)
                     {
-                        console.Out.WriteLine($"Property '{options.PropertyName}' not found.");
-                        return ExitCodes.InvalidData;
+                        console.Out.WriteLine($"Property '{name}' not found.");
+                        return (int)ExitCodes.InvalidData;
                     }
-                    else if (options.PropertyValue is null)
+                    else if (value is null)
                     {
                         console.Out.WriteLine($"Property {info?.Name}");
                         console.Out.WriteLine($"    CanRead:       {info?.CanRead}");
@@ -207,12 +205,12 @@ namespace UtilityApp.Commands
 
                         if ((info?.PropertyType.IsArray ?? false) && (info.GetValue(settings) is Array))
                         {
-                            Array? value = (Array?)info.GetValue(settings);
-                            console.Out.WriteLine($"    Array:         [{value?.Length}]");
+                            Array? array = (Array?)info.GetValue(settings);
+                            console.Out.WriteLine($"    Array:         [{array?.Length}]");
 
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
-                                for (int i = 0; i < value?.Length; ++i)
+                                for (int i = 0; i < array?.Length; ++i)
                                 {
                                     console.Out.WriteLine($"    Value[{i}]:      {((Array?)info?.GetValue(settings))?.GetValue(i)}");
                                 }
@@ -220,22 +218,21 @@ namespace UtilityApp.Commands
                         }
                         else if ((info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IList))
                         {
-                            IList? value = (IList?)info.GetValue(settings);
-                            console.Out.WriteLine($"    List:          [{value?.Count}]");
+                            IList? list = (IList?)info.GetValue(settings);
+                            console.Out.WriteLine($"    List:          [{list?.Count}]");
 
-                            for (int i = 0; i < value?.Count; ++i)
+                            for (int i = 0; i < list?.Count; ++i)
                             {
                                 console.Out.WriteLine($"    Value[{i}]:      {((IList?)info?.GetValue(settings))?[i]}");
                             }
                         }
                         else if ((info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IDictionary))
                         {
-                            IDictionary? value = (IDictionary?)info.GetValue(settings);
-                            console.Out.WriteLine($"    Dictionary:    [{value?.Count}]");
+                            IDictionary? dictionary = (IDictionary?)info.GetValue(settings);
+                            console.Out.WriteLine($"    Dictionary:    [{dictionary?.Count}]");
 
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
-                                var dictionary = (IDictionary?)info?.GetValue(settings);
                                 int i = 0;
 
                                 if (!(dictionary is null))
@@ -249,7 +246,7 @@ namespace UtilityApp.Commands
                         }
                         else
                         {
-                            if (options.ShowValue)
+                            if (options.Value)
                             {
                                 console.Out.WriteLine($"    Value:         {info?.GetValue(settings)}");
                             }
@@ -266,42 +263,42 @@ namespace UtilityApp.Commands
                             switch (typeCode)
                             {
                                 case TypeCode.String:
-                                    info?.SetValue(settings, options.PropertyValue);
+                                    info?.SetValue(settings, value);
                                     break;
 
                                 case TypeCode.Boolean:
-                                    if (bool.TryParse(options.PropertyValue, out bool boolValue)) info?.SetValue(settings, boolValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (bool.TryParse(value, out bool boolValue)) info?.SetValue(settings, boolValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 case TypeCode.Int32:
-                                    if (int.TryParse(options.PropertyValue, out int intValue)) info?.SetValue(settings, intValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (int.TryParse(value, out int intValue)) info?.SetValue(settings, intValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 case TypeCode.Int64:
-                                    if (long.TryParse(options.PropertyValue, out long longValue)) info?.SetValue(settings, longValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (long.TryParse(value, out long longValue)) info?.SetValue(settings, longValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 case TypeCode.Single:
-                                    if (float.TryParse(options.PropertyValue, out float floatValue)) info?.SetValue(settings, floatValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (float.TryParse(value, out float floatValue)) info?.SetValue(settings, floatValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 case TypeCode.Double:
-                                    if (double.TryParse(options.PropertyValue, out double doubleValue)) info?.SetValue(settings, doubleValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (double.TryParse(value, out double doubleValue)) info?.SetValue(settings, doubleValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 case TypeCode.Decimal:
-                                    if (decimal.TryParse(options.PropertyValue, out decimal decimalValue)) info?.SetValue(settings, decimalValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (decimal.TryParse(value, out decimal decimalValue)) info?.SetValue(settings, decimalValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 case TypeCode.DateTime:
-                                    if (DateTime.TryParse(options.PropertyValue, out DateTime datetimeValue)) info?.SetValue(settings, datetimeValue);
-                                    else console.Out.WriteLine($"Property value '{options.PropertyValue}' invalid.");
+                                    if (DateTime.TryParse(value, out DateTime datetimeValue)) info?.SetValue(settings, datetimeValue);
+                                    else console.Out.WriteLine($"Property value '{value}' invalid.");
                                     break;
 
                                 default:
@@ -324,7 +321,7 @@ namespace UtilityApp.Commands
                     }
                 }
 
-                return ExitCodes.SuccessfullyCompleted;
+                return (int)ExitCodes.SuccessfullyCompleted;
             });
         }
 

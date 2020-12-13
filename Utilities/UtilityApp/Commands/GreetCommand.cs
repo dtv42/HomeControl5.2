@@ -55,19 +55,21 @@ namespace UtilityApp
 
             Handler = CommandHandler.Create<IConsole, GlobalOptions, string>((console, options, name) =>
             {
-                logger.LogInformation("Handler()");
+                logger.LogDebug("Handler()");
 
                 if (options.Verbose)
                 {
                     console.Out.WriteLine($"Password: {options.Password}");
                     console.Out.WriteLine($"Verbose:  {options.Verbose}");
-                    console.Out.WriteLine($"Uri:      {options.Uri}");
+                    console.Out.WriteLine($"Host:     {options.Host}");
                 }
 
                 _logger.LogDebug($"Greeting:  {_greeting}");
                 _logger.LogDebug($"Name:      {name}");
 
                 console.Out.WriteLine($"{_greeting} {name}!");
+
+                return (int)ExitCodes.SuccessfullyCompleted;
             });
 
             _greeting = options.Greeting;

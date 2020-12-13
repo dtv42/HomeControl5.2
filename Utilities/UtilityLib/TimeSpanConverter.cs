@@ -16,7 +16,7 @@ namespace UtilityLib
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
-    #endregion
+    #endregion Using Directives
 
     public class TimeSpanConverter : JsonConverter<TimeSpan>
     {

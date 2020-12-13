@@ -15,6 +15,7 @@ namespace UtilityLib
     using System;
     using System.CommandLine;
     using System.CommandLine.Builder;
+    using System.CommandLine.IO;
     using System.CommandLine.Parsing;
     using System.Diagnostics;
     using System.Globalization;
@@ -24,7 +25,7 @@ namespace UtilityLib
     using Microsoft.Extensions.Hosting;
     using Serilog;
 
-    #endregion
+    #endregion Using Directives
 
     /// <summary>
     ///  Extension methods for command line execution.
@@ -36,12 +37,12 @@ namespace UtilityLib
             // Setup command line parser.
             using IServiceScope scope = host.Services.CreateScope();
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
+            int code = (int)ExitCodes.SuccessfullyCompleted;
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            // Binding application settings.
+            // Setup commandline builder.
             var serviceProvider = host.Services;
-
             var rootCommand = serviceProvider.GetRequiredService<RootCommand>();
             var commandLineBuilder = new CommandLineBuilder(rootCommand);
 
@@ -54,19 +55,46 @@ namespace UtilityLib
             }
 
             var parser = commandLineBuilder
+                .CancelOnProcessTermination()
+                .UseExceptionHandler((exception, context) =>
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    
+                    if (exception.InnerException is not null)
+                    {
+                        context.Console.Error.WriteLine($"Exception: {exception.InnerException.Message}");
+                        context.ResultCode = (int)ExitCodes.InvalidData;
+                    }
+                    else
+                    {
+                        context.Console.Error.WriteLine($"Unhandled exception: {exception.Message}");
+                        context.ResultCode = (int)ExitCodes.UnhandledException;
+                    }
+
+                    Console.ResetColor();
+                })
                 .UseParseErrorReporting()
                 .UseVersionOption()
-                .UseDefaults()
                 .Build();
 
             try
             {
-                return await parser.InvokeAsync(args).ConfigureAwait(false);
+                code = await parser.InvokeAsync(args).ConfigureAwait(false);
+                return code;
             }
             finally
             {
                 stopWatch.Stop();
-                Console.WriteLine($"Time elapsed {stopWatch.Elapsed}");
+
+                if (code != (int)ExitCodes.SuccessfullyCompleted)
+                {
+                    Console.WriteLine($"Exit code: {(ExitCodes.Codes)code}");
+                }
+                else
+                {
+                    Console.WriteLine($"Time elapsed {stopWatch.Elapsed}");
+                }
+
                 Log.CloseAndFlush();
             }
         }

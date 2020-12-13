@@ -60,15 +60,13 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption FromAmong<TOption>(this TOption option, params int[] values)
-            where TOption : Option<int>
+        public static Option<int> FromAmong(this Option<int> option, params int[] values)
         {
             option.FromAmong(values.ToList<int>().Select(v => v.ToString()).ToArray());
             return option;
         }
 
-        public static TOption Range<TOption>(this TOption option, double minimum, double maximum)
-            where TOption : Option<double>
+        public static Option<double> Range(this Option<double> option, double minimum, double maximum)
         {
             option.Argument.AddValidator(r =>
             {
@@ -80,8 +78,7 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption Range<TOption>(this TOption option, int minimum, int maximum)
-            where TOption : Option<int>
+        public static Option<int> Range(this Option<int> option, int minimum, int maximum)
         {
             option.Argument.AddValidator(r =>
             {
@@ -93,8 +90,7 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption Range<TOption>(this TOption option, long minimum, long maximum)
-            where TOption : Option<long>
+        public static Option<long> Range(this Option<long> option, long minimum, long maximum)
         {
             option.Argument.AddValidator(r =>
             {
@@ -106,8 +102,7 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption StringLength<TOption>(this TOption option, int length)
-            where TOption : Option<string>
+        public static Option<string> StringLength(this Option<string> option, int length)
         {
             option.Argument.AddValidator(r =>
             {
@@ -120,8 +115,7 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption NotEmpty<TOption>(this TOption option)
-            where TOption : Option<string>
+        public static Option<string> NotEmpty(this Option<string> option)
         {
             option.Argument.AddValidator(r =>
             {
@@ -134,8 +128,7 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption NotWhiteSpace<TOption>(this TOption option)
-            where TOption : Option<string>
+        public static Option<string> NotWhiteSpace(this Option<string> option)
         {
             option.Argument.AddValidator(r =>
             {
@@ -148,23 +141,42 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption Regex<TOption>(this TOption option, string pattern)
-            where TOption : Option<string>
+        public static Option<string> Regex(this Option<string> option, string pattern)
         {
             option.Argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
-                var regex = new Regex(pattern);
-                if (regex.IsMatch(value)) return null;
-                return $"{r.Symbol.Name} value must match the regular expression: {pattern}";
+                if (pattern is null) return "Pattern value is null";
+            try
+                {
+                    var regex = new Regex(pattern);
+                    if (regex.IsMatch(value)) return null;
+                    return $"{r.Symbol.Name} value must match the regular expression: {pattern}";
+                }
+                catch(ArgumentException aex)
+                {
+                    return $"Pattern value invalid: {aex.Message}";
+                }
             });
 
             return option;
         }
 
-        public static TOption IPAddress<TOption>(this TOption option)
-            where TOption : Option<string>
+        public static Option<string> Guid(this Option<string> option)
+        {
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<string>();
+                if (value is null) return $"{r.Symbol.Name} value is null";
+                if (System.Guid.TryParse(value, out _)) return null;
+                return $"{r.Symbol.Name} value is not a valid GUID";
+            });
+
+            return option;
+        }
+
+        public static Option<string> IPAddress(this Option<string> option)
         {
             option.Argument.AddValidator(r =>
             {
@@ -177,8 +189,7 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption IPEndpoint<TOption>(this TOption option)
-            where TOption : Option<string>
+        public static Option<string> IPEndpoint(this Option<string> option)
         {
             option.Argument.AddValidator(r =>
             {
@@ -191,23 +202,15 @@ namespace UtilityLib
             return option;
         }
 
-        public static TOption Uri<TOption>(this TOption option, UriKind kind = UriKind.Absolute, bool httpOnly = true)
-            where TOption : Option<Uri>
+        public static Option Uri(this Option<string> option, UriKind kind = UriKind.Absolute, bool httpOnly = true)
         {
             option.Argument.AddValidator(r =>
             {
-                try
-                {
-                    var uri = r.GetValueOrDefault<Uri>();
-                    if (uri is null) return $"{r.Symbol.Name} value is null";
-                    if (!System.Uri.IsWellFormedUriString(uri.OriginalString, kind)) return $"{r.Symbol.Name} value is not a well formed URI";
-                    if (httpOnly && ((uri.Scheme.ToLower() != "http") && (uri.Scheme.ToLower() != "https"))) return $"{r.Symbol.Name} schema value is not valid";
-                    return null;
-                }
-                catch (InvalidOperationException)
-                {
-                    return $"{r.Symbol.Name} value is not a valid URI";
-                }
+                var value = r.GetValueOrDefault<string>();
+                if (value is null) return $"{r.Symbol.Name} value is null";
+                if (!System.Uri.TryCreate(value, kind, out System.Uri? uri)) return $"{r.Symbol.Name} value is not a valid URI";
+                if (httpOnly && ((uri.Scheme.ToLower() != "http") && (uri.Scheme.ToLower() != "https"))) return $"{r.Symbol.Name} schema value is not valid";
+                return null;
             });
 
             return option;

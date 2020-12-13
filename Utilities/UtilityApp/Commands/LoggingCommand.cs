@@ -28,44 +28,28 @@ namespace UtilityApp.Commands
     /// <summary>
     ///  Sample of a command using logging statements. Various log statements are generated.
     /// </summary>
-    public sealed class LogCommand : BaseCommand
+    public sealed class LoggingCommand : BaseCommand
     {
         #region Constructors
 
         /// <summary>
-        ///  Initializes a new instance of the <see cref="LogCommand"/> class.
+        ///  Initializes a new instance of the <see cref="LoggingCommand"/> class.
         /// </summary>
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public LogCommand(IConfiguration configuration, ILogger<LogCommand> logger)
-            : base(logger, "log", "A sample dotnet console application - log command")
+        public LoggingCommand(IConfiguration configuration, ILogger<LoggingCommand> logger)
+            : base(logger, "logging", "A sample dotnet console application - log command")
         {
-            logger.LogDebug("LogCommand()");
-
-            // Setup command options.
-            AddOption(new Option<LogEventLevel>(
-                aliases: new string[] { "-c", "--cloglevel" }, 
-                description: "the console log level")
-            );
-
-            AddOption(new Option<LogEventLevel>(
-                aliases: new string[] { "-f", "--floglevel" },
-                description: "the logfile log level")
-            );
+            logger.LogDebug("LoggingCommand()");
 
             // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, bool, LogEventLevel, LogEventLevel>((console, verbose, cloglevel, floglevel) =>
+            Handler = CommandHandler.Create<IConsole, bool>((console, verbose) =>
             {
-                logger.LogInformation("Handler()");
-
-                Program.ConsoleSwitch.MinimumLevel = cloglevel;
-                Program.LogFileSwitch.MinimumLevel = floglevel;
+                logger.LogDebug("Handler()");
 
                 if (verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
-                    console.Out.WriteLine($"Console   Log level:     {Program.ConsoleSwitch.MinimumLevel}");
-                    console.Out.WriteLine($"File      Log level:     {Program.LogFileSwitch.MinimumLevel}");
                     console.Out.WriteLine($"MinimumLevel Default:    {configuration.GetValue<LogEventLevel>("Serilog:MinimumLevel:Default")}");
                     console.Out.WriteLine($"MinimumLevel System:     {configuration.GetValue<LogEventLevel>("Serilog:MinimumLevel:Override:System")}");
                     console.Out.WriteLine($"MinimumLevel Microsoft:  {configuration.GetValue<LogEventLevel>("Serilog:MinimumLevel:Override:Microsoft")}");
@@ -81,7 +65,7 @@ namespace UtilityApp.Commands
 
                 console.Out.WriteLine();
 
-                return ExitCodes.SuccessfullyCompleted;
+                return (int)ExitCodes.SuccessfullyCompleted;
             });
         }
 

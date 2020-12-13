@@ -23,6 +23,7 @@ namespace UtilityApp.Commands
 
     using UtilityLib;
     using UtilityApp.Options;
+    using UtilityApp.Models;
 
     #endregion Using Directives
 
@@ -38,11 +39,6 @@ namespace UtilityApp.Commands
         /// </summary>
         private readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
 
-        /// <summary>
-        /// The application configuration instance.
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         #endregion
 
         #region Constructors
@@ -56,48 +52,57 @@ namespace UtilityApp.Commands
         public AppCommand(IConfiguration configuration, GlobalOptions options, ILogger<AppCommand> logger)
             : base(options, logger, "Console app root command.")
         {
-            AddGlobalOption(new Option<Uri>(
-                alias: "--uri",
-                description: "Global URI option")
-                .Default(options.Uri)
+            // Adding global options to the default global options.
+            AddGlobalOption(new Option<string>(
+                alias: "--host",
+                description: "global host option")
+                .Default(options.Host)
                 .Name("URI")
                 .Uri()
             );
 
             AddGlobalOption(new Option<string>(
                 alias: "--password",
-                description: "Global password option")
+                description: "global password option")
                 .Default(options.Password)
                 .Name("STRING")
             );
 
             Handler = CommandHandler.Create<IConsole, GlobalOptions>((console, options) =>
             {
-                logger.LogInformation("Handler()");
+                logger.LogDebug("Handler()");
+
+                // Get settings from configuration.
+                AppSettings settings = new AppSettings();
+                configuration.GetSection("AppSettings").Bind(settings);
 
                 if (options.Settings)
                 {
-                    console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(Program.Settings, _jsonoptions)}");
+                    console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(settings, _jsonoptions)}");
+                    console.Out.WriteLine();
                 }
 
                 if (options.Configuration)
                 {
-                    console.Out.WriteLine($"Configuration: {JsonSerializer.Serialize(_configuration.AsEnumerable(), _jsonoptions)}");
+                    console.Out.WriteLine($"Configuration: {JsonSerializer.Serialize(configuration.AsEnumerable(), _jsonoptions)}");
+                    console.Out.WriteLine();
                 }
 
                 if (options.Verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {ExecutableName}");
                     console.Out.WriteLine();
-                    console.Out.WriteLine($"Password: {options.Password}");
-                    console.Out.WriteLine($"Verbose:  {options.Verbose}");
-                    console.Out.WriteLine($"Uri:      {options.Uri}");
+                    console.Out.WriteLine($"Configuration: {options.Configuration}");
+                    console.Out.WriteLine($"Settings:      {options.Settings}");
+                    console.Out.WriteLine($"Password:      {options.Password}");
+                    console.Out.WriteLine($"Verbose:       {options.Verbose}");
+                    console.Out.WriteLine($"Host:          {options.Host}");
                 }
 
                 Console.Out.WriteLine("Hello Console!");
-            });
 
-            _configuration = configuration;
+                return (int)ExitCodes.SuccessfullyCompleted;
+            });
         }
 
         #endregion Constructors

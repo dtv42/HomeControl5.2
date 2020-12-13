@@ -18,33 +18,23 @@ namespace UtilityLib
     #endregion Using Directives
 
     /// <summary>
-    ///  Validates an absolute Uri option value.
+    ///  Validates a Guid option value.
     /// </summary>
-    public sealed class UriAttribute : ValidationAttribute
+    public sealed class GuidAttribute : ValidationAttribute
     {
-        public UriAttribute(UriKind kind = UriKind.Absolute, bool httpOnly = true)
-            : base("The Uri value must be valid: '<scheme>//<host>:<port>'")
+        public GuidAttribute()
+            : base("The Guid value must be valid: '{dddddddd-dddd-dddd-dddd-dddddddddddd}' or 'dddddddd-dddd-dddd-dddd-dddddddddddd' or (dddddddd-dddd-dddd-dddd-dddddddddddd)")
         {
-            Kind = kind;
-            HttpOnly = httpOnly;
         }
-
-        public UriKind Kind { get; }
-        public bool HttpOnly { get; }
 
         protected override ValidationResult? IsValid(object? value, ValidationContext context)
         {
-            if ((value is null) || !Uri.TryCreate((string)value, Kind, out Uri? uri))
+            if ((value is null) || !Guid.TryParse((string)value, out Guid _))
             {
                 return new ValidationResult(FormatErrorMessage(context.DisplayName));
             }
 
-            return HttpOnly ? ValidationResult.Success : uri.Scheme.ToLower() switch
-            {
-                "http" => ValidationResult.Success,
-                "https" => ValidationResult.Success,
-                _ => new ValidationResult(FormatErrorMessage(context.DisplayName)),
-            };
+            return ValidationResult.Success;
         }
     }
 }

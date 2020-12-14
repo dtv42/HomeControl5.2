@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="HostExtension.cs" company="DTV-Online">
-//   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>13-5-2020 16:32</created>
+// <created>10-12-2020 15:55</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityLib
@@ -55,6 +55,16 @@ namespace UtilityLib
             }
 
             var parser = commandLineBuilder
+                .UseVersionOption()
+                .UseHelp()
+                .UseEnvironmentVariableDirective()
+                .UseParseDirective()
+                .UseDebugDirective()
+                .UseSuggestDirective()
+                .RegisterWithDotnetSuggest()
+                .UseTypoCorrections()
+                .UseParseErrorReporting()
+                .UseExceptionHandler()
                 .CancelOnProcessTermination()
                 .UseExceptionHandler((exception, context) =>
                 {
@@ -73,8 +83,6 @@ namespace UtilityLib
 
                     Console.ResetColor();
                 })
-                .UseParseErrorReporting()
-                .UseVersionOption()
                 .Build();
 
             try

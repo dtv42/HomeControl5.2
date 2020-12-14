@@ -31,12 +31,6 @@ namespace UtilityApp.Commands
     /// </summary>
     public class SettingsCommand : BaseCommand
     {
-        #region Private Data Members
-
-        private readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -52,7 +46,7 @@ namespace UtilityApp.Commands
             // Setup command options.
             AddOption(new Option<bool>(
                 aliases: new string[] { "-o", "--options" },
-                description: "show option settings")
+                description: "Show option settings")
             );
 
             // Get settings from configuration.

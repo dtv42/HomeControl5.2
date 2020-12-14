@@ -11,7 +11,7 @@
 namespace UtilityLib
 {
     /// <summary>
-    /// Standard global options.
+    /// Global and standard options (<see cref="BaseRootCommand"/>).
     /// </summary>
     public class BaseOptions
     {

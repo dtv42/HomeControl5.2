@@ -16,10 +16,7 @@ namespace UtilityApp.Commands
     using System.CommandLine.IO;
     using System.CommandLine.Invocation;
 
-    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
-
-    using Serilog.Events;
 
     using UtilityLib;
 
@@ -44,7 +41,7 @@ namespace UtilityApp.Commands
             // Setup command options.
             AddOption(new Option<bool>(
                 aliases: new string[] { "-x", "--exception" }, 
-                description: "throw an exception")
+                description: "Throw an exception")
             );
 
             // Setup execution handler.

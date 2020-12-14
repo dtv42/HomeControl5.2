@@ -13,15 +13,18 @@ namespace UtilityLib
     #region Using Directives
 
     using System.CommandLine;
+    using System.CommandLine.IO;
+    using System.Text.Json;
 
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
-
-    using Serilog.Events;
 
     #endregion Using Directives
 
     /// <summary>
-    /// Base RootCommand class providing a logger data member and standard command options.
+    /// Base RootCommand class providing a logger data member, global and standard command options.
+    /// The verbose option is global (can be used in all sub commands). 
+    /// The settings and configuration option is available in the derived root command only.
     /// </summary>
     public class BaseRootCommand : RootCommand
     {
@@ -31,6 +34,11 @@ namespace UtilityLib
         /// The logger instance.
         /// </summary>
         protected readonly ILogger? _logger;
+
+        /// <summary>
+        /// The default JSON serializer options.
+        /// </summary>
+        protected readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion Protected Data Members
 
@@ -46,24 +54,42 @@ namespace UtilityLib
         {
             AddGlobalOption(new Option<bool>(
                 alias: "--verbose",
-                description: "global verbose option")
+                description: "Global verbose option")
                 .Default(options.Verbose)
             );
 
             AddOption(new Option<bool>(
                 alias: "--settings",
-                description: "command show settings")
+                description: "Show settings option")
                 .Default(options.Settings)
             );
 
             AddOption(new Option<bool>(
                 alias: "--configuration",
-                description: "command show configuration")
+                description: "Show configuration option")
                 .Default(options.Configuration)
             );
 
             _logger = logger;
             _logger?.LogDebug($"BaseRootCommand(description: {description})");
+        }
+
+        public void ShowSettings<TSettings>(IConsole console, BaseOptions options, TSettings settings) where TSettings : class, new()
+        {
+            if (options.Settings)
+            {
+                console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(settings, _jsonoptions)}");
+                console.Out.WriteLine();
+            }
+        }
+
+        public void ShowConfiguration(IConsole console, BaseOptions options, IConfiguration configuration)
+        {
+            if (options.Configuration)
+            {
+                console.Out.WriteLine($"Configuration: {JsonSerializer.Serialize(configuration.AsEnumerable(), _jsonoptions)}");
+                console.Out.WriteLine();
+            }
         }
 
         #endregion Constructors

@@ -12,23 +12,19 @@ namespace UtilityApp.Commands
 {
     #region Using Directives
 
-    using System;
     using System.CommandLine;
     using System.CommandLine.IO;
     using System.CommandLine.Invocation;
+    using System.CommandLine.Parsing;
+    using System.Net;
     using System.Text.Json;
 
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
     using UtilityApp.Models;
-    using System.Net;
     using UtilityApp.Options;
-    using System.CommandLine.Parsing;
-    using Microsoft.Extensions.Configuration;
-    using System.Linq;
-    using System.ComponentModel.DataAnnotations;
-    using System.Collections.Generic;
 
     #endregion Using Directives
 
@@ -37,16 +33,12 @@ namespace UtilityApp.Commands
     /// </summary>
     public class TestdataCommand : BaseCommand
     {
-        #region Private Data Members
-
-        private readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
-
-        #endregion Private Data Members
-
         #region Constructors
 
         /// <summary>
         ///  Initializes a new instance of the <see cref="TestdataCommand"/> class.
+        ///  The Testdata configuration data is used for the default values of the options.
+        ///  All options accessible and can be tested if they have been parsed (using ParseResult).
         ///  Note that the code option is hidden in the help output (see https://github.com/dotnet/command-line-api/issues/629).
         /// </summary>
         /// <param name="configuration"></param>
@@ -61,14 +53,14 @@ namespace UtilityApp.Commands
             configuration.GetSection("TestData").Bind(testdata);
 
             // Setup command options. The option variables are used to interpret the commandline parser results.
-            var dOption = new Option<bool>          (new string[] { "-d", "--data"     }, "show new data");
-            var vOption = new Option<int>           (new string[] { "-v", "--value"    }, "specify integer value[0..60]").Default(testdata.Value)   .Range(0, 60);
-            var nOption = new Option<string>        (new string[] { "-n", "--name"     }, "specify name (max.10)")       .Default(testdata.Name)    .StringLength(10);
-            var gOption = new Option<string>        (new string[] { "-g", "--guid"     }, "specify GUID")                .Default(testdata.Guid)    .Guid();
-            var aOption = new Option<string>        (new string[] { "-a", "--address"  }, "specify IP address")          .Default(testdata.Address) .IPAddress();
-            var eOption = new Option<string>        (new string[] { "-e", "--endpoint" }, "specify IP endpoint")         .Default(testdata.Endpoint).IPEndpoint();
-            var uOption = new Option<string>        (new string[] { "-u", "--uri"      }, "specify absolute URI")        .Default(testdata.Uri)     .Uri();
-            var cOption = new Option<HttpStatusCode>(new string[] { "-c", "--code"     }, "specify HTTP status code")    .Default(testdata.Code)    .IsHidden();
+            var dOption = new Option<bool>          (new string[] { "-d", "--data"     }, "Show new data");
+            var vOption = new Option<int>           (new string[] { "-v", "--value"    }, "Specify integer value[0..60]").Default(testdata.Value)   .Range(0, 60);
+            var nOption = new Option<string>        (new string[] { "-n", "--name"     }, "Specify name (max.10)")       .Default(testdata.Name)    .StringLength(10);
+            var gOption = new Option<string>        (new string[] { "-g", "--guid"     }, "Specify GUID")                .Default(testdata.Guid)    .Guid();
+            var aOption = new Option<string>        (new string[] { "-a", "--address"  }, "Specify IP address")          .Default(testdata.Address) .IPAddress();
+            var eOption = new Option<string>        (new string[] { "-e", "--endpoint" }, "Specify IP endpoint")         .Default(testdata.Endpoint).IPEndpoint();
+            var uOption = new Option<string>        (new string[] { "-u", "--uri"      }, "Specify absolute URI")        .Default(testdata.Uri)     .Uri();
+            var cOption = new Option<HttpStatusCode>(new string[] { "-c", "--code"     }, "Specify HTTP status code")    .Default(testdata.Code)    .IsHidden();
 
             AddOption(dOption);
             AddOption(vOption);
@@ -94,6 +86,7 @@ namespace UtilityApp.Commands
                     console.Out.WriteLine();
                 }
 
+                // Show original (new) TestData.
                 if (options.Data)
                 {
                     var data = new TestData();
@@ -109,6 +102,7 @@ namespace UtilityApp.Commands
                     console.Out.WriteLine();
                 }
 
+                // Show current TestData (options).
                 console.Out.WriteLine($"Options:");
                 console.Out.WriteLine($"    Data:     {options.Data}");
                 console.Out.WriteLine($"    Value:    {options.Value}");
@@ -120,6 +114,7 @@ namespace UtilityApp.Commands
                 console.Out.WriteLine($"    Code:     {options.Code}");
                 console.Out.WriteLine();
 
+                // Show command line parsed options.
                 console.Out.WriteLine($"CommandLine:");
 
                 if (result.Has(dOption)) { console.Out.WriteLine($"    Data:     {options.Data}");    }

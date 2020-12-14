@@ -13,7 +13,7 @@ namespace UtilityLib
     #region Using Directives
 
     using System.CommandLine;
-
+    using System.Text.Json;
     using Microsoft.Extensions.Logging;
 
     #endregion Using Directives
@@ -29,6 +29,11 @@ namespace UtilityLib
         /// The logger instance.
         /// </summary>
         protected readonly ILogger? _logger;
+
+        /// <summary>
+        /// The default JSON serializer options.
+        /// </summary>
+        protected readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion Protected Data Members
 

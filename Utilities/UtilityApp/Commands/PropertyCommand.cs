@@ -31,17 +31,12 @@ namespace UtilityApp.Commands
     #endregion Using Directives
 
     /// <summary>
-    ///  Sample of a property command showing property infos using the AppSettings instance.
+    ///  Sample of a property command showing property infos using the AppSettings data instance.
     ///  Note that for named properties only simple types are supported (no arrays or lists).
+    ///  A custom validation option for the command properties options.
     /// </summary>
     public sealed class PropertyCommand : BaseCommand
     {
-        #region Private Data Members
-
-        private readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -62,17 +57,17 @@ namespace UtilityApp.Commands
             AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
             AddArgument(new Argument<string>("value", "The property value.").Arity(ArgumentArity.ZeroOrOne));
 
-            AddOption(new Option<bool>(new string[] { "-p", "--properties"   }, "show all properties"));
-            AddOption(new Option<bool>(new string[] { "-s", "--simple"       }, "show simple properties"));
-            AddOption(new Option<bool>(new string[] { "-a", "--arrays"       }, "show arrays"));
-            AddOption(new Option<bool>(new string[] { "-l", "--lists"        }, "show lists"));
-            AddOption(new Option<bool>(new string[] { "-d", "--dictionaries" }, "show dictionaries"));
-            AddOption(new Option<bool>(new string[] { "-v", "--value"        }, "show value"));
+            AddOption(new Option<bool>(new string[] { "-p", "--properties"   }, "Show all properties"));
+            AddOption(new Option<bool>(new string[] { "-s", "--simple"       }, "Show simple properties"));
+            AddOption(new Option<bool>(new string[] { "-a", "--arrays"       }, "Show arrays"));
+            AddOption(new Option<bool>(new string[] { "-l", "--lists"        }, "Show lists"));
+            AddOption(new Option<bool>(new string[] { "-d", "--dictionaries" }, "Show dictionaries"));
+            AddOption(new Option<bool>(new string[] { "-v", "--value"        }, "Show value"));
 
             // Add custom validation.
             AddValidator(r =>
             {
-                if (string.IsNullOrEmpty(r.GetArgumentValueOrDefault<string>("Name")) &&
+                if (string.IsNullOrEmpty(r.GetArgumentValueOrDefault<string>("name")) &&
                     !r.Children.Contains("-p") && !r.Children.Contains("-s") &&
                     !r.Children.Contains("-a") && !r.Children.Contains("-l") && !r.Children.Contains("-d"))
                 {

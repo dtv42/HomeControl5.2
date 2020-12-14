@@ -29,7 +29,7 @@ namespace UtilityApp
     internal static class Program
     {
         /// <summary>
-        /// The entry point for the program.
+        /// The entry point for the program. The RunCommandLineAsync() is configuring the commandline parser.
         /// </summary>
         /// <param name="args">The arguments.</param>
         /// <returns>When complete, an integer representing success (0) or failure (non-0).</returns>

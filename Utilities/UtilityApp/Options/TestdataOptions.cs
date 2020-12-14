@@ -12,17 +12,12 @@ namespace UtilityApp.Options
 {
     #region Using Directives
 
-    using System;
-    using System.ComponentModel.DataAnnotations;
-    using System.Net;
-    using System.Text.Json.Serialization;
     using UtilityApp.Models;
-    using UtilityLib;
 
     #endregion
 
     /// <summary>
-    ///  A collection of options for the validate command. The testdata fields are used as options.
+    ///  A collection of options for the validate command. The testdata fields are used as options too.
     /// </summary>
     internal class TestdataOptions : TestData
     {

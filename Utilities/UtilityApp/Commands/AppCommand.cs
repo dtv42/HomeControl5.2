@@ -16,7 +16,6 @@ namespace UtilityApp.Commands
     using System.CommandLine;
     using System.CommandLine.Invocation;
     using System.CommandLine.IO;
-    using System.Text.Json;
 
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
@@ -28,16 +27,11 @@ namespace UtilityApp.Commands
     #endregion Using Directives
 
     /// <summary>
-    /// The application root command.
+    /// The application root command. Supports additional global options.
     /// </summary>
     public sealed class AppCommand : BaseRootCommand
     {
         #region Private Data Members
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private readonly JsonSerializerOptions _jsonoptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion
 
@@ -55,17 +49,17 @@ namespace UtilityApp.Commands
             // Adding global options to the default global options.
             AddGlobalOption(new Option<string>(
                 alias: "--host",
-                description: "global host option")
+                description: "Global host option")
                 .Default(options.Host)
-                .Name("URI")
+                .Name("uri")
                 .Uri()
             );
 
             AddGlobalOption(new Option<string>(
                 alias: "--password",
-                description: "global password option")
+                description: "Global password option")
                 .Default(options.Password)
-                .Name("STRING")
+                .Name("string")
             );
 
             Handler = CommandHandler.Create<IConsole, GlobalOptions>((console, options) =>
@@ -76,18 +70,6 @@ namespace UtilityApp.Commands
                 AppSettings settings = new AppSettings();
                 configuration.GetSection("AppSettings").Bind(settings);
 
-                if (options.Settings)
-                {
-                    console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(settings, _jsonoptions)}");
-                    console.Out.WriteLine();
-                }
-
-                if (options.Configuration)
-                {
-                    console.Out.WriteLine($"Configuration: {JsonSerializer.Serialize(configuration.AsEnumerable(), _jsonoptions)}");
-                    console.Out.WriteLine();
-                }
-
                 if (options.Verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {ExecutableName}");
@@ -97,7 +79,11 @@ namespace UtilityApp.Commands
                     console.Out.WriteLine($"Password:      {options.Password}");
                     console.Out.WriteLine($"Verbose:       {options.Verbose}");
                     console.Out.WriteLine($"Host:          {options.Host}");
+                    console.Out.WriteLine();
                 }
+
+                ShowSettings(console, options, settings);
+                ShowConfiguration(console, options, configuration);
 
                 Console.Out.WriteLine("Hello Console!");
 

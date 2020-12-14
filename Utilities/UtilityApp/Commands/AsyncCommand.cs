@@ -26,6 +26,7 @@ namespace UtilityApp.Commands
 
     /// <summary>
     ///  Sample of a command using async execution. The command simply waits for the specified delay.
+    ///  Note that configuration or application settings are not used here. The global option verbose is available.
     /// </summary>
     public sealed class AsyncCommand : BaseCommand
     {
@@ -41,10 +42,11 @@ namespace UtilityApp.Commands
             logger.LogDebug("AsyncCommand()");
 
             // Setup command options.
-            AddOption(new Option<int?>(
+            AddOption(new Option<int>(
                 aliases: new string[] { "-d", "--delay" },
-                description: "the delay in seconds")
-                .Default(10));
+                description: "The delay in seconds")
+                .Default(10)
+                .Range(1, 100));
 
             // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, CancellationToken, bool, int>(async (console, token, verbose, delay) =>
@@ -55,6 +57,8 @@ namespace UtilityApp.Commands
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
                     console.Out.WriteLine();
+                    console.Out.WriteLine($"Verbose:       {verbose}");
+                    console.Out.WriteLine($"Delay:         {delay}");
                 }
 
                 try

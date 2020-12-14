@@ -18,7 +18,7 @@ namespace UtilityApp.Options
         #region Constructors
 
         /// <summary>
-        ///  The constructor mapps the input parameters to the properties.
+        ///  The constructor maps the input parameters to the corresponding properties.
         /// </summary>
         /// <param name="d"></param>
         /// <param name="v"></param>
@@ -31,23 +31,12 @@ namespace UtilityApp.Options
         /// <param name="e"></param>
         /// <param name="w"></param>
         /// <param name="x"></param>
+        /// <param name="g"></param>
         /// <param name="a"></param>
         /// <param name="p"></param>
         /// <param name="u"></param>
-        public ValidateOptions(int? d = null,
-                               int? v = null,
-                               int? o = null,
-                               int? n = null,
-                               int? r = null,
-                               long? l = null,
-                               string? s = null,
-                               string? m = null,
-                               string? e = null,
-                               string? w = null,
-                               string? x = null,
-                               string? a = null,
-                               string? p = null,
-                               string? u = null)
+        public ValidateOptions(int d, int v, int o, int n, int r, long l,
+                               string s, string m, string e, string w, string x, string g, string a, string p, string u)
         {
             IntegerD = d;
             IntegerV = v;
@@ -61,6 +50,7 @@ namespace UtilityApp.Options
             StringE = e;
             StringW = w;
             StringX = x;
+            StringG = g;
             StringA = a;
             StringP = p;
             StringU = u;
@@ -68,20 +58,21 @@ namespace UtilityApp.Options
 
         #endregion
 
-        public int? IntegerD { get; set; }
-        public int? IntegerV { get; set; }
-        public int? IntegerO { get; set; }
-        public int? IntegerN { get; set; }
-        public int? IntegerR { get; set; }
-        public long? IntegerL { get; set; }
+        public int IntegerD { get; set; }
+        public int IntegerV { get; set; }
+        public int IntegerO { get; set; }
+        public int IntegerN { get; set; }
+        public int IntegerR { get; set; }
+        public long IntegerL { get; set; }
 
-        public string? StringS { get; set; }
-        public string? StringM { get; set; }
-        public string? StringE { get; set; }
-        public string? StringW { get; set; }
-        public string? StringX { get; set; }
-        public string? StringA { get; set; }
-        public string? StringP { get; set; }
-        public string? StringU { get; set; }
+        public string StringS { get; set; }
+        public string StringM { get; set; }
+        public string StringE { get; set; }
+        public string StringW { get; set; }
+        public string StringX { get; set; }
+        public string StringG { get; set; }
+        public string StringA { get; set; }
+        public string StringP { get; set; }
+        public string StringU { get; set; }
     }
 }

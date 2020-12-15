@@ -1,6 +1,6 @@
 # UtilityLib
 
-The *UtilityLib* library provides a set of helper classes to facilitate the implementation of applications by providing standardized implementations in various contexts.
+The *UtilityLib* libraries provides a set of helper classes to facilitate the implementation of applications by providing standardized implementations in various contexts.
 An application class is derived from the corresponding base class using the default implementation (constructor, properties, methods).
 Other helper classes are for default exit codes, data status, property validation, json converters, and custom attributes.
 
@@ -20,7 +20,6 @@ The following interfaces and classes are provided:
 - BaseRootCommand
 
 ##### Helper Classes
-- ValidatedCommand
 - NumberConverter
 - IPAddressConverter
 - IPEndPointConverter
@@ -54,112 +53,27 @@ The following interfaces and classes are provided:
 ## Base Classes
 
 ### BaseClass
-The *BaseClass* class provides a standard logger data member and an optional application settings member using dependency injection.
+The *BaseClass* class provides a standard logger data member using dependency injection.
 
 ~~~CSharp
 protected readonly ILogger<BaseClass> _logger;
 ~~~
-and
-~~~CSharp
-protected readonly ILogger<BaseClass<AppSettings>> _logger;
-protected readonly AppSettings _settings;
-~~~
 
 ### BaseCommand
-The *BaseCommand* class for console application commands provides logger, settings, and environment data members.
-Standard **--help**, **--version** and **loglevel** options simplify a command implementation allowing synchronous or async execution:
+The *BaseCommand* class for console applications provides logger and default json serialization data members and is derived from the **Command** class.
 
-~~~CSharp
-int OnExecute()
-~~~
-and
-~~~CSharp
-async Task<int> OnExecuteAsync(CancellationToken cancellationToken)~~~
-~~~
+### BaseRootCommand
+The *BaseRootCommand* class for console applications provides logger and default json serialization data members and is derived from the **RootCommand** class.
+The basic options *verbose*, *settings*, and *configuration* are provided. Note that the verbose option is a global command option.
 
-The *loglevel* command provides mapping of various loglevels (Microsoft.Extensions.Logging, Serilog):
-
-- trace, verbose
-- debug
-- info, information
-- warning
-- error
-- fatal, critical
-
-The *BaseCommand* class is derived from the **ValidatedCommand** class which provides a custom validation routine:
-
-~~~CSharp
-public virtual bool CheckOptions()
-~~~
-
-The validation integration is done using the **OptionValidationAttribute** and the **ValidationExtension** class.
+### BaseOptions
+The *BaseOptions* class for console applications provides base options data members used by the **BaseRootCommand** class.
 
 ### BaseController
-The *BaseController* class for an API controller provides logger and settings data members.
-Some additional methods returning *StatusCodeResult* and *ObjectResult* are available: 
-
-|    Method Name    |  Status Code   |
-|:------------------|:--------------:|
-| MethodNotAllowed  |      405       |
-| NotAcceptable     |      406       |
-| RequestTimeout    |      408       |
-| Gone              |      410       |
-| ExpectationFailed |      417       |
-| ImaTeapot         |      418       |
-| Locked            |      423       |
-| NotImplemented    |      501       |
-| BadGateway        |      502       |
-| Unavailable       |      503       |
-| GatewayTimeout    |      504       |
-
-### BaseGateway
-The *BaseGateway* class implements some common features of a gateway.
-
-~~~CSharp
-        public bool IsStartupOk { get; }
-        public bool IsLocked { get; }
-
-        public DataStatus Status { get; set; }
-
-        public bool Startup();
-        public bool CheckAccess();
-        public void Lock();
-        public async Task LockAsync();
-        public void Unlock();
-~~~
-
-Locking primitives are implemented using a *SemaphoreSlim*.
-Derived classes should override the **Startup()**, **CheckAccess()** methods, and the **IsStartupOk** property.
-Note that the timestamp of the *Status* property is automatically updated.
-
-### BaseProgram
-The *BaseProgram* class provides a standardized main routine, and host setup using the *CommandLineHost* helper class and adds singleton service for the application settings using an JSON *appsettings.json* configuration file.
-The static JSON serilizer options are initialized adding default converters.
-The *CultureInfo* is set to "en-US" and a *Stopwatch* timer is used to display elapsed time.
-
-~~~CSharp
-public static async Task<int> RunCommandLineApplicationAsync(IHostBuilder builder, string[] args)
-public static IHostBuilder CreateDefaultBuilder()
-~~~
+The *BaseController* class for an API controller provides logger and configuration data members.
+A helper method maps a data status to corresponding *ObjectResult*. 
 
 ## Helper Classes
-
-### CommandLineHost
-The *CommandLineHost* class provides a standard implementation for a console application default host builder.
-This is similar to the standard generic host setup, but adds Serilog support.
-
-### TimedService
-Helper classes providing a basic background service for repetitive execution.
-Three virtual methods are available for overriding in a derived class:
-
-~~~CSharp
-protected virtual async Task DoStart()
-protected virtual async Task DoWork()
-protected virtual async Task DoStop()
-~~~
-
-### ValidatedCommand
-This helper class is used by the *BaseCommand* class.
 
 ### NumberConverter
 This converter is used to convert strings containing numbers.
@@ -169,14 +83,6 @@ This converter is used to convert TimeSpans (note: should use ISO8601).
 
 ### SpecialDoubleConverter
 This converter allows special values (NaN, Infinity, -Infinity).
-
-### UIHealthReport
-Helper class to provide a custom data type for health report output.
-See https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks.
-
-### UIResponseWriter
-Helper class to provide JSON formatted health reports.
-See https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks.
 
 ## Status and HealthChecks
 
@@ -198,7 +104,7 @@ public bool IsNotBad { get; }
 ~~~
 
 ### ExitCodes
-The *ExitCodes* class provides standard exit codes for a console application.
+The *ExitCodes* class provides standard exit codes (enum) for a console application.
 
 |     Exit Code Name    | Code |
 |:----------------------|:----:|
@@ -224,12 +130,6 @@ The *ExitCodes* class provides standard exit codes for a console application.
 | UnhandledException    | 134 - SIGABRT |
 
 The last two exit codes are OS platform dependent.
-
-### StatusCheck
-A *HealthCheck* implementation interpreting the DataStatus property of a gateway class.
-
-### PingCheck
-A *HealthCheck* to determine whether a remote computer is accessible over the network.
 
 ## Extensions
 
@@ -258,13 +158,15 @@ public static ICollection<ValidationResult> Validate<T>(this T obj)
 public static T ValidateAndThrow<T>(this T obj)
 ~~~
 
-### WebHostBuilder Extensions
-The *WebHostBuilderExtensions* class extends the standard implementation for a web application
-providing **Serilog** logger support, and an *AppSettings* singleton.
-~~~CSharp
-public static IWebHostBuilder ConfigureBaseHost<TSettings>(this IWebHostBuilder builder)
-    where TSettings : class, new()
-~~~
+### ArgumentExtensions
+
+### OptionsExtensions
+
+### CommandExtensions
+
+### ParserExtensions
+
+### Host Extensions
 
 ## Settings
 
@@ -306,22 +208,6 @@ The **DontFragment** and **Ttl** are ping options used to control how Ping data 
     }
 ~~~
 
-### TimedServiceSettings
-The *TimedServiceSettings* are used to configure the execution parameter of the *TimedService*.
-The **Delay** property is used to delay the *DoStart()* method by the specified number of milliseconds.
-The **Period** property is the time between executions of the *DoWork()* method.
-
-~~~CSharp
-public class TimedServiceSettings
-{
-    [Range(0, Int32.MaxValue)]
-    public int Delay { get; set; }
-
-    [Range(0, Int32.MaxValue)]
-    public int Period { get; set; } = 1000;
-}
-~~~
-
 ### UdpClientSettings
 The *UdpClientSettings* are used to configure *UdpClients*.
 
@@ -341,8 +227,8 @@ The *UdpClientSettings* are used to configure *UdpClients*.
 
 ## Attributes
 
+- Guid: Validates using *Guid.TryParse()*.
 - IPAddress: Validates using *IPAddress.TryParse()*.
 - IPEndPoint: Validates using *IPEndPoint.TryParse()*.
-- AbsoluteUri: Validates using *Uri.TryCreate()*.
-- OptionValidation: Validates using *CheckOptions()*.
+- Uri: Validates using *Uri.TryCreate()*.
 

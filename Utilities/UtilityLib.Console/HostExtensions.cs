@@ -29,7 +29,7 @@ namespace UtilityLib.Console
     /// <summary>
     ///  Extension methods for command line execution.
     /// </summary>
-    public static class HostExtension
+    public static class HostExtensions
     {
         public static async Task<int> RunCommandLineAsync(this IHost host, string[] args)
         {
@@ -53,6 +53,7 @@ namespace UtilityLib.Console
                 }
             }
 
+            // Setup the parser using defaults and overrides the exception handler.
             var parser = commandLineBuilder
                 .UseVersionOption()
                 .UseHelp()

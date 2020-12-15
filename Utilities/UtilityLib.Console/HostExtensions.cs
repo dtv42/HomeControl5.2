@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="HostExtension.cs" company="DTV-Online">
+// <copyright file="HostExtensions.cs" company="DTV-Online">
 //   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>10-12-2020 15:55</created>
+// <created>15-12-2020 07:47</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityLib.Console

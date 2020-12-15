@@ -5,7 +5,7 @@
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>2-12-2020 11:28</created>
+// <created>15-12-2020 07:47</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityLib.Console

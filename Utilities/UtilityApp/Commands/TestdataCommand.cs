@@ -47,7 +47,7 @@ namespace UtilityApp.Commands
         public TestdataCommand(IConfiguration configuration, ILogger<TestdataCommand> logger)
             : base(logger, "testdata", "A dotnet console application sub command - testdata command")
         {
-            logger.LogDebug("TestCommand()");
+            logger.LogDebug("TestDataCommand()");
 
             // Get test data from configuration.
             TestData testdata = new TestData();

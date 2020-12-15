@@ -29,15 +29,6 @@ namespace UtilityApp.Commands
     /// </summary>
     public sealed class GreetCommand : BaseCommand
     {
-        #region Private Data Members
-
-        /// <summary>
-        /// The greeting option (configured using app settings only).
-        /// </summary>
-        private readonly string _greeting = string.Empty;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -54,27 +45,25 @@ namespace UtilityApp.Commands
                 description: "The name of the person to greet.")
             );
 
-            Handler = CommandHandler.Create<IConsole, GlobalOptions, string>((console, options, name) =>
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, string>((console, globals, name) =>
             {
                 logger.LogDebug("Handler()");
 
-                if (options.Verbose)
+                if (globals.Verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
-                    console.Out.WriteLine($"Password: {options.Password}");
-                    console.Out.WriteLine($"Verbose:  {options.Verbose}");
-                    console.Out.WriteLine($"Host:     {options.Host}");
+                    console.Out.WriteLine($"Password: {globals.Password}");
+                    console.Out.WriteLine($"Verbose:  {globals.Verbose}");
+                    console.Out.WriteLine($"Host:     {globals.Host}");
                 }
 
-                _logger.LogDebug($"Greeting:  {_greeting}");
+                _logger.LogDebug($"Greeting:  {options.Greeting}");
                 _logger.LogDebug($"Name:      {name}");
 
-                console.Out.WriteLine($"{_greeting} {name}!");
+                console.Out.WriteLine($"{options.Greeting} {name}!");
 
                 return (int)ExitCodes.SuccessfullyCompleted;
             });
-
-            _greeting = options.Greeting;
         }
 
         #endregion Constructors

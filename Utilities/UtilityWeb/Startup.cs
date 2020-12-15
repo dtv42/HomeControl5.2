@@ -38,8 +38,10 @@ namespace UtilityWeb
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHealthChecks()
-                    .AddCheck("ping1", new PingHealthCheck("www.google.com", 100));
+                .AddCheck("ping1", new PingHealthCheck("www.google.com", 100));
+
             services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions());
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "UtilityWeb", Version = "v1" });

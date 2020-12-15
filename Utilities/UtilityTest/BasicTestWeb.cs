@@ -42,6 +42,7 @@ namespace UtilityTest
         }
 
         [Theory]
+        [InlineData("/health")]
         [InlineData("/swagger")]
         [InlineData("/swagger/v1/swagger.json")]
         public async Task TestSwaggerEndpoints(string url)

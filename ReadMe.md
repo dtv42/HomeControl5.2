@@ -5,19 +5,10 @@ An application class is derived from the corresponding base class using the defa
 Other helper classes are for default exit codes, data status, property validation, json converters, and custom attributes.
 
 The following interfaces and classes are provided:
-##
-
-##### Interfaces
-- IHttpClientSettings
-- IPingSettings
-- IUdpClientSettings
+## UtilityLib
 
 ##### Base Classes
 - BaseClass
-- BaseCommand
-- BaseController
-- BaseOption
-- BaseRootCommand
 
 ##### Helper Classes
 - NumberConverter
@@ -26,29 +17,42 @@ The following interfaces and classes are provided:
 - TimeSpanConverter
 - SpecialDoubleConverter
 
-##### Status and Health Checks 
+##### Status and Health 
 - DataStatus
 - ExitCodes
+
+##### Extensions
+- JsonExtensions
+- PropertyExtensions
+- ValidationExtensions
+
+##### Attributes
+- GuidAttribute
+- UriAttribute
+- IPAddressAttribute
+- IPEndPointAttribute
+
+## UtilityLib.Console
+
+##### Base Classes
+- BaseCommand
+- BaseOption
+- BaseRootCommand
 
 ##### Extensions
 - ArgumentExtensions
 - CommandExtensions
 - HostExtensions
-- JsonExtensions
 - OptionExtensions
-- PropertyExtensions
-- ValidationExtensions
+- ParserExtensions
 
-##### Settings
-- HttpClientSettings
-- PingSettings
-- UdpClientSettings
+## UtilityLib.Webapp
 
-##### Attributes
-- UriAttribute
-- IPAddressAttribute
-- IPEndPointAttribute
-- OptionValidationAttribute
+##### Base Classes
+- BaseController
+
+##### Helper Classes
+- PingHealthCheck
 
 ## Base Classes
 
@@ -62,9 +66,17 @@ protected readonly ILogger<BaseClass> _logger;
 ### BaseCommand
 The *BaseCommand* class for console applications provides logger and default json serialization data members and is derived from the **Command** class.
 
+~~~CSharp
+protected readonly ILogger<BaseCommand> _logger;
+~~~
+
 ### BaseRootCommand
 The *BaseRootCommand* class for console applications provides logger and default json serialization data members and is derived from the **RootCommand** class.
 The basic options *verbose*, *settings*, and *configuration* are provided. Note that the verbose option is a global command option.
+
+~~~CSharp
+protected readonly ILogger<BaseRootCommand> _logger;
+~~~
 
 ### BaseOptions
 The *BaseOptions* class for console applications provides base options data members used by the **BaseRootCommand** class.
@@ -72,6 +84,11 @@ The *BaseOptions* class for console applications provides base options data memb
 ### BaseController
 The *BaseController* class for an API controller provides logger and configuration data members.
 A helper method maps a data status to corresponding *ObjectResult*. 
+
+~~~CSharp
+protected readonly ILogger<BaseController> _logger;
+protected readonly IConfiguration _configuration;
+~~~
 
 ## Helper Classes
 

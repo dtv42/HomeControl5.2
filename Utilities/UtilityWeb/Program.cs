@@ -17,17 +17,29 @@ namespace UtilityWeb
     using Microsoft.Extensions.Hosting;
 
     using Serilog;
-    using Serilog.Sinks.SystemConsole.Themes;
 
     #endregion Using Directives
 
-    public class Program
+    /// <summary>
+    ///  Application class providing the main entry point.
+    /// </summary>
+    internal static class Program
     {
+        /// <summary>
+        ///  Main application entrypoint creating a Host instance, adding the testdata.json configuration,
+        ///  configuring the logger using Serilog and run the web application.
+        /// </summary>
+        /// <param name="args">The command line arguments</param>
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
         }
 
+        /// <summary>
+        ///  Helper function to prepare testdata and logging.
+        /// </summary>
+        /// <param name="args">The command line arguments.</param>
+        /// <returns>The host builder instance.</returns>
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
@@ -39,14 +51,7 @@ namespace UtilityWeb
                         })
                         .UseSerilog((context, logger) =>
                         {
-                            logger.ReadFrom.Configuration(context.Configuration)
-                                  .WriteTo.File(
-                                      "Logs/log-.log",
-                                      rollingInterval: RollingInterval.Day,
-                                      outputTemplate: "{Timestamp: HH:mm:ss.fff zzz} {SourceContext} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-                                  .WriteTo.Console(
-                                      theme: AnsiConsoleTheme.Code,
-                                      outputTemplate: "{Timestamp: HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}");
+                            logger.ReadFrom.Configuration(context.Configuration);
                         })
                         .UseStartup<Startup>();
                 });

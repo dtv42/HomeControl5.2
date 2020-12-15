@@ -2,7 +2,7 @@
   "profiles": {
     "UtilityApp": {
       "commandName": "Project",
-      "commandLineArgs": "error -x",
+      "commandLineArgs": "logging",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

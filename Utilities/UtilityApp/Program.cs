@@ -18,7 +18,6 @@ namespace UtilityApp
     using Microsoft.Extensions.Hosting;
 
     using Serilog;
-    using Serilog.Sinks.SystemConsole.Themes;
 
     using UtilityLib.Console;
     using UtilityApp.Commands;
@@ -26,10 +25,15 @@ namespace UtilityApp
 
     #endregion
 
+    /// <summary>
+    ///  Application class providing the main entry point.
+    /// </summary>
     internal static class Program
     {
         /// <summary>
-        /// The entry point for the program. The RunCommandLineAsync() is configuring the commandline parser.
+        /// The entry point for the program reading testdata.json configuration, configuring the logger
+        /// using Serilog, and configuring all application commands and options.
+        /// The RunCommandLineAsync() is configuring the commandline parser.
         /// </summary>
         /// <param name="args">The arguments.</param>
         /// <returns>When complete, an integer representing success (0) or failure (non-0).</returns>
@@ -64,15 +68,7 @@ namespace UtilityApp
                 })
                 .UseSerilog((context, logger) =>
                 {
-                    logger.ReadFrom.Configuration(context.Configuration)
-                          .Enrich.FromLogContext()
-                          .WriteTo.File(
-                              "Logs/log-.log",
-                              rollingInterval: RollingInterval.Day,
-                              outputTemplate: "{Timestamp: HH:mm:ss.fff zzz} {SourceContext} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-                          .WriteTo.Console(
-                              theme: AnsiConsoleTheme.Code,
-                              outputTemplate: "{Timestamp: HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}");
+                    logger.ReadFrom.Configuration(context.Configuration);
                 })
                 .Build()
                 .RunCommandLineAsync(args);

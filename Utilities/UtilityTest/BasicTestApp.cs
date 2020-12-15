@@ -40,7 +40,7 @@ namespace UtilityTest
             proc.StartInfo.RedirectStandardError = true;
 
             // set working directory
-            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl5.2\HomeControl5.2\Utilities\UtilityApp\";
+            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl5.2\Utilities\UtilityApp\";
 
             // start and wait for exit
             proc.Start();
@@ -128,6 +128,9 @@ namespace UtilityTest
         [InlineData("logging",           "[ERR] Error Message",                 ExitCodes.SuccessfullyCompleted)]
         [InlineData("logging",           "[FTL] Critical Message",              ExitCodes.SuccessfullyCompleted)]
         [InlineData("logging --verbose", "Commandline Application: UtilityApp", ExitCodes.SuccessfullyCompleted)]
+        [InlineData("logging --verbose", "MinimumLevel Default:    Debug",      ExitCodes.SuccessfullyCompleted)]
+        [InlineData("logging --verbose", "MinimumLevel System:     Warning",    ExitCodes.SuccessfullyCompleted)]
+        [InlineData("logging --verbose", "MinimumLevel Microsoft:  Warning",    ExitCodes.SuccessfullyCompleted)]
         [InlineData("logging -?",        "UtilityApp logging [options]",        ExitCodes.SuccessfullyCompleted)]
         [InlineData("logging --help",    "UtilityApp logging [options]",        ExitCodes.SuccessfullyCompleted)]
         public void TestLoggingCommand(string args, string text, ExitCodes exit)

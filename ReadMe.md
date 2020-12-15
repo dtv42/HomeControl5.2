@@ -101,7 +101,7 @@ This converter is used to convert TimeSpans (note: should use ISO8601).
 ### SpecialDoubleConverter
 This converter allows special values (NaN, Infinity, -Infinity).
 
-## Status and HealthChecks
+## Status and Health
 
 ### DataStatus
 Class to provide OPC UA compatible result codes.
@@ -177,70 +177,18 @@ public static T ValidateAndThrow<T>(this T obj)
 
 ### ArgumentExtensions
 
+
 ### OptionsExtensions
+
 
 ### CommandExtensions
 
+
 ### ParserExtensions
+
 
 ### Host Extensions
 
-## Settings
-
-### HttpClientSettings
-The *HttpClientSettings* are used to configure *HttpClients*.
-
-~~~CSharp
-    public class HttpClientSettings : IHttpClientSettings
-    {
-        [AbsoluteUri]
-        public string BaseAddress { get; set; } = "http://localhost";
-
-        [Range(0, Int32.MaxValue)]
-        public int Timeout { get; set; } = 100;
-    }
-~~~
-
-### PingSettings
-The *PingSettings* are used to configure the execution parameter of the *Ping* health check.
-The **Host** property is used to define the remote host for the Ping.
-The **Roundtrip** property is used to limit the allowed Ping roundtrip time (degrading) to the specified number of milliseconds.
-The **DontFragment** and **Ttl** are ping options used to control how Ping data packets are transmitted.
-
-~~~CSharp
-    public class PingSettings : IPingSettings
-    {
-        public string Host { get; set; } = "localhost";
-
-        [Range(0, Int32.MaxValue)]
-        public int Timeout { get; set; } = 100;
-
-        public bool DontFragment { get; set; }
-
-        [Range(1, Int32.MaxValue)]
-        public int Ttl { get; set; } = 128;
-
-        [Range(1, Int32.MaxValue)]
-        public int Roundtrip { get; set; } = 100;
-    }
-~~~
-
-### UdpClientSettings
-The *UdpClientSettings* are used to configure *UdpClients*.
-
-~~~CSharp
-    public class UdpClientSettings : IUdpClientSettings
-    {
-        [IPEndPoint]
-        public string EndPoint { get; set; } = string.Empty;
-
-        [Range(0, 65535)]
-        public int Port { get; set; }
-
-        [Range(0, double.MaxValue)]
-        public double Timeout { get; set; } = 1.0;
-    }
-~~~
 
 ## Attributes
 

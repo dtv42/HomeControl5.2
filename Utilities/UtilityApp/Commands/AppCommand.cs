@@ -21,6 +21,7 @@ namespace UtilityApp.Commands
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Console;
     using UtilityApp.Options;
     using UtilityApp.Models;
 

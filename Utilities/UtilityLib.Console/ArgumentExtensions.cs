@@ -1,18 +1,17 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="OptionsExtensions.cs" company="DTV-Online">
+// <copyright file="ArgumentExtensions.cs" company="DTV-Online">
 //   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>2-12-2020 11:28</created>
+// <created>10-12-2020 16:37</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityLib
+namespace UtilityLib.Console
 {
     #region Using Directives
 
-    using System;
     using System.CommandLine;
     using System.CommandLine.Parsing;
     using System.Linq;
@@ -21,90 +20,88 @@ namespace UtilityLib
     #endregion
 
     /// <summary>
-    ///  Extension methods for command line options.
+    ///  Extension methods for command line arguments.
     /// </summary>
-    public static class OptionExtensions
+    public static class ArgumentExtensions
     {
-        public static TOption Name<TOption>(this TOption option, string value)
-            where TOption : Option
+        public static TArgument Name<TArgument>(this TArgument argument, string value)
+            where TArgument : Argument
         {
-            option.Argument.Name = value;
-            return option;
+            argument.Name = value;
+            return argument;
         }
 
-        public static TOption IsHidden<TOption>(this TOption option, bool value = true)
-            where TOption : Option
+        public static TArgument Hide<TArgument>(this TArgument argument, bool value = true)
+            where TArgument : Argument
         {
-            option.IsHidden = value;
-            return option;
+            argument.IsHidden = value;
+            return argument;
         }
 
-        public static TOption IsRequired<TOption>(this TOption option, bool value = true)
-            where TOption : Option
+        public static TArgument Default<TArgument>(this TArgument argument, object value)
+            where TArgument : Argument
         {
-            option.IsRequired = value;
-            return option;
+            argument.SetDefaultValue(value);
+            return argument;
         }
 
-        public static TOption Default<TOption>(this TOption option, object value)
-            where TOption : Option
+        public static TArgument Arity<TArgument>(this TArgument argument, IArgumentArity arity)
+            where TArgument : Argument
         {
-            option.Argument.SetDefaultValue(value);
-            return option;
+            argument.Arity = arity;
+            return argument;
         }
 
-        public static TOption Arity<TOption>(this TOption option, IArgumentArity arity)
-            where TOption : Option
+        public static TArgument FromAmong<TArgument>(this TArgument argument, params int[] values)
+            where TArgument : Argument
         {
-            option.Argument.Arity = arity;
-            return option;
+            argument.FromAmong(values.ToList<int>().Select(v => v.ToString()).ToArray());
+            return argument;
         }
 
-        public static Option<int> FromAmong(this Option<int> option, params int[] values)
+        public static TArgument Range<TArgument>(this TArgument argument, double minimum, double maximum)
+            where TArgument : Argument
         {
-            option.FromAmong(values.ToList<int>().Select(v => v.ToString()).ToArray());
-            return option;
-        }
-
-        public static Option<double> Range(this Option<double> option, double minimum, double maximum)
-        {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<double>();
                 if ((value >= minimum) && (value <= maximum)) return null;
                 return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<int> Range(this Option<int> option, int minimum, int maximum)
+        public static TArgument Range<TArgument>(this TArgument argument, int minimum, int maximum)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<int>();
                 if ((value >= minimum) && (value <= maximum)) return null;
                 return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<long> Range(this Option<long> option, long minimum, long maximum)
+        public static TArgument Range<TArgument>(this TArgument argument, long minimum, long maximum)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<long>();
                 if ((value >= minimum) && (value <= maximum)) return null;
                 return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> StringLength(this Option<string> option, int length)
+        public static TArgument StringLength<TArgument>(this TArgument argument, int length)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
@@ -112,12 +109,13 @@ namespace UtilityLib
                 return $"{r.Symbol.Name} value length must be max. {length}";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> NotEmpty(this Option<string> option)
+        public static TArgument NotEmpty<TArgument>(this TArgument argument)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
@@ -125,12 +123,13 @@ namespace UtilityLib
                 return $"{r.Symbol.Name} value must not be empty";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> NotWhiteSpace(this Option<string> option)
+        public static TArgument NoWhiteSpace<TArgument>(this TArgument argument)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
@@ -138,34 +137,28 @@ namespace UtilityLib
                 return $"{r.Symbol.Name} value must not be white space only";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> Regex(this Option<string> option, string pattern)
+        public static TArgument Regex<TArgument>(this TArgument argument, string pattern)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
-                if (pattern is null) return "Pattern value is null";
-            try
-                {
-                    var regex = new Regex(pattern);
-                    if (regex.IsMatch(value)) return null;
-                    return $"{r.Symbol.Name} value must match the regular expression: {pattern}";
-                }
-                catch(ArgumentException aex)
-                {
-                    return $"Pattern value invalid: {aex.Message}";
-                }
+                var regex = new Regex(pattern);
+                if (regex.IsMatch(value)) return null;
+                return $"{r.Symbol.Name} value must match the regular expression: {pattern}";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> Guid(this Option<string> option)
+        public static TArgument Guid<TArgument>(this TArgument argument)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
@@ -173,12 +166,13 @@ namespace UtilityLib
                 return $"{r.Symbol.Name} value is not a valid GUID";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> IPAddress(this Option<string> option)
+        public static TArgument IPAddress<TArgument>(this TArgument argument)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
@@ -186,12 +180,13 @@ namespace UtilityLib
                 return $"{r.Symbol.Name} value is not a valid IP address";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option<string> IPEndpoint(this Option<string> option)
+        public static TArgument IPEndpoint<TArgument>(this TArgument argument)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
@@ -199,21 +194,21 @@ namespace UtilityLib
                 return $"{r.Symbol.Name} value is not a valid IP endpoint";
             });
 
-            return option;
+            return argument;
         }
 
-        public static Option Uri(this Option<string> option, UriKind kind = UriKind.Absolute, bool httpOnly = true)
+        public static TArgument Uri<TArgument>(this TArgument argument, System.UriKind kind = System.UriKind.Absolute)
+            where TArgument : Argument
         {
-            option.Argument.AddValidator(r =>
+            argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<string>();
                 if (value is null) return $"{r.Symbol.Name} value is null";
-                if (!System.Uri.TryCreate(value, kind, out System.Uri? uri)) return $"{r.Symbol.Name} value is not a valid URI";
-                if (httpOnly && ((uri.Scheme.ToLower() != "http") && (uri.Scheme.ToLower() != "https"))) return $"{r.Symbol.Name} schema value is not valid";
-                return null;
+                if (System.Uri.TryCreate(value, kind, out _)) return null;
+                return $"{r.Symbol.Name} value is not a valid URI";
             });
 
-            return option;
+            return argument;
         }
     }
 }

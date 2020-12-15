@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="PingSettings.cs" company="DTV-Online">
+// <copyright file="HttpClientSettings.cs" company="DTV-Online">
 //   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
@@ -8,7 +8,7 @@
 // <created>13-5-2020 13:53</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityLib
+namespace UtilityLib.Webapp
 {
     #region Using Directives
 
@@ -17,22 +17,15 @@ namespace UtilityLib
 
     #endregion
 
-    public class PingSettings : IPingSettings
+    public class HttpClientSettings : IHttpClientSettings
     {
         #region Public Properties
 
-        public string Host { get; set; } = "localhost";
+        [Uri]
+        public string BaseAddress { get; set; } = "http://localhost";
 
         [Range(0, Int32.MaxValue)]
         public int Timeout { get; set; } = 100;
-
-        public bool DontFragment { get; set; }
-
-        [Range(1, Int32.MaxValue)]
-        public int Ttl { get; set; } = 128;
-
-        [Range(1, Int32.MaxValue)]
-        public int Roundtrip { get; set; } = 100;
 
         #endregion
     }

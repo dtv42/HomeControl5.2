@@ -20,7 +20,7 @@ namespace UtilityApp
     using Serilog;
     using Serilog.Sinks.SystemConsole.Themes;
 
-    using UtilityLib;
+    using UtilityLib.Console;
     using UtilityApp.Commands;
     using UtilityApp.Options;
 

@@ -12,9 +12,7 @@ namespace UtilityApp.Options
 {
     #region Using Directives
 
-    using System;
-
-    using UtilityLib;
+    using UtilityLib.Console;
 
     #endregion Using Directives
 

@@ -22,6 +22,7 @@ namespace UtilityApp.Commands
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Console;
     using UtilityApp.Models;
 
     #endregion Using Directives

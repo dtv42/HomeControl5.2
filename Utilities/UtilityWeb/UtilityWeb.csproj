@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
+    <ProjectReference Include="..\UtilityLib.Webapp\UtilityLib.Webapp.csproj" />
   </ItemGroup>
 
 </Project>

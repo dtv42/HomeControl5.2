@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>UtilityLib.Console</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+    <PackageReference Include="System.CommandLine.Hosting" Version="0.3.0-alpha.20574.7" />
+    <PackageReference Include="System.CommandLine.Rendering" Version="0.3.0-alpha.20574.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
+  </ItemGroup>
+
+</Project>

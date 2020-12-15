@@ -8,7 +8,7 @@
 // <created>10-12-2020 11:07</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityLib
+namespace UtilityLib.Console
 {
     /// <summary>
     /// Global and standard options (<see cref="BaseRootCommand"/>).

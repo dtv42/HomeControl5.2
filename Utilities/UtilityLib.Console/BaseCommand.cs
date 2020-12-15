@@ -8,13 +8,15 @@
 // <created>10-12-2020 09:53</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityLib
+namespace UtilityLib.Console
 {
     #region Using Directives
 
     using System.CommandLine;
     using System.Text.Json;
+
     using Microsoft.Extensions.Logging;
+
 
     #endregion Using Directives
 

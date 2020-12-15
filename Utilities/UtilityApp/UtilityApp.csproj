@@ -28,17 +28,14 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Async" Version="1.4.0" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
-    <PackageReference Include="System.CommandLine.Hosting" Version="0.3.0-alpha.20574.7" />
-    <PackageReference Include="System.CommandLine.Rendering" Version="0.3.0-alpha.20574.7" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Logs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UtilityLib.Console\UtilityLib.Console.csproj" />
   </ItemGroup>
 
 </Project>

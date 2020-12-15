@@ -19,7 +19,7 @@ namespace UtilityWeb.Controllers
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
-    using UtilityLib;
+    using UtilityLib.Webapp;
     using UtilityWeb.Models;
 
     #endregion Using Directives

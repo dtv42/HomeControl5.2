@@ -19,6 +19,7 @@ namespace UtilityApp
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Console;
     using UtilityApp.Options;
 
     #endregion

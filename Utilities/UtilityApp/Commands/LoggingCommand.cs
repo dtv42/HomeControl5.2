@@ -22,6 +22,7 @@ namespace UtilityApp.Commands
     using Serilog.Events;
 
     using UtilityLib;
+    using UtilityLib.Console;
 
     #endregion Using Directives
 

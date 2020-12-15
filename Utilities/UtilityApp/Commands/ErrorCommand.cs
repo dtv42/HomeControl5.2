@@ -19,6 +19,7 @@ namespace UtilityApp.Commands
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Console;
 
     #endregion Using Directives
 

@@ -21,12 +21,13 @@ namespace UtilityApp.Commands
     using System.Reflection;
     using System.Text.Json;
 
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Console;
     using UtilityApp.Models;
     using UtilityApp.Options;
-    using Microsoft.Extensions.Configuration;
 
     #endregion Using Directives
 

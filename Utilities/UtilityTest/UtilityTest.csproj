@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -36,7 +36,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UtilityApp\UtilityApp.csproj" />
-    <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
     <ProjectReference Include="..\UtilityWeb\UtilityWeb.csproj" />
   </ItemGroup>
 

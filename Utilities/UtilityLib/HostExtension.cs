@@ -23,7 +23,6 @@ namespace UtilityLib
 
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
-    using Serilog;
 
     #endregion Using Directives
 
@@ -73,7 +72,6 @@ namespace UtilityLib
                     if (exception.InnerException is not null)
                     {
                         context.Console.Error.WriteLine($"Exception: {exception.InnerException.Message}");
-                        context.ResultCode = (int)ExitCodes.InvalidData;
                     }
                     else
                     {
@@ -96,14 +94,12 @@ namespace UtilityLib
 
                 if (code != (int)ExitCodes.SuccessfullyCompleted)
                 {
-                    Console.WriteLine($"Exit code: {(ExitCodes.Codes)code}");
+                    Console.WriteLine($"Exit code: {(ExitCodes)code}");
                 }
                 else
                 {
                     Console.WriteLine($"Time elapsed {stopWatch.Elapsed}");
                 }
-
-                Log.CloseAndFlush();
             }
         }
     }

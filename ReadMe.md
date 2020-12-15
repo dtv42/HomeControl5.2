@@ -8,49 +8,45 @@ The following interfaces and classes are provided:
 ##
 
 ##### Interfaces
-- IGateway
 - IHttpClientSettings
 - IPingSettings
-- ITimedServiceSettings
 - IUdpClientSettings
 
 ##### Base Classes
 - BaseClass
 - BaseCommand
 - BaseController
-- BaseGateway
-- BaseProgram
+- BaseOption
+- BaseRootCommand
 
 ##### Helper Classes
-- CommandLineHost
-- TimedService
 - ValidatedCommand
 - NumberConverter
+- IPAddressConverter
+- IPEndPointConverter
 - TimeSpanConverter
 - SpecialDoubleConverter
-- UIHealthReport
-- UIResponseWriter
 
 ##### Status and Health Checks 
 - DataStatus
 - ExitCodes
-- StatusCheck
-- PingCheck
 
 ##### Extensions
+- ArgumentExtensions
+- CommandExtensions
+- HostExtensions
 - JsonExtensions
+- OptionExtensions
 - PropertyExtensions
 - ValidationExtensions
-- WebHostBuilderExtensions
 
 ##### Settings
 - HttpClientSettings
 - PingSettings
-- TimedServiceSettings
 - UdpClientSettings
 
 ##### Attributes
-- AbsoluteUriAttribute
+- UriAttribute
 - IPAddressAttribute
 - IPEndPointAttribute
 - OptionValidationAttribute

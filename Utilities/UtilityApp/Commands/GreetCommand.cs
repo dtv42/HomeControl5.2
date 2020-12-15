@@ -59,6 +59,7 @@ namespace UtilityApp
 
                 if (options.Verbose)
                 {
+                    console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
                     console.Out.WriteLine($"Password: {options.Password}");
                     console.Out.WriteLine($"Verbose:  {options.Verbose}");
                     console.Out.WriteLine($"Host:     {options.Host}");

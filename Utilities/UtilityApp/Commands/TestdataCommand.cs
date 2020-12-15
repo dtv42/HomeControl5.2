@@ -53,6 +53,7 @@ namespace UtilityApp.Commands
             configuration.GetSection("TestData").Bind(testdata);
 
             // Setup command options. The option variables are used to interpret the commandline parser results.
+            var jOption = new Option<bool>          (new string[] { "-j", "--json"     }, "Show data (JSON)");
             var dOption = new Option<bool>          (new string[] { "-d", "--data"     }, "Show new data");
             var vOption = new Option<int>           (new string[] { "-v", "--value"    }, "Specify integer value[0..60]").Default(testdata.Value)   .Range(0, 60);
             var nOption = new Option<string>        (new string[] { "-n", "--name"     }, "Specify name (max.10)")       .Default(testdata.Name)    .StringLength(10);
@@ -62,6 +63,7 @@ namespace UtilityApp.Commands
             var uOption = new Option<string>        (new string[] { "-u", "--uri"      }, "Specify absolute URI")        .Default(testdata.Uri)     .Uri();
             var cOption = new Option<HttpStatusCode>(new string[] { "-c", "--code"     }, "Specify HTTP status code")    .Default(testdata.Code)    .IsHidden();
 
+            AddOption(jOption);
             AddOption(dOption);
             AddOption(vOption);
             AddOption(nOption);
@@ -82,6 +84,10 @@ namespace UtilityApp.Commands
                 if (verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                }
+
+                if (options.Json)
+                {
                     console.Out.WriteLine($"TestData: {JsonSerializer.Serialize(testdata, _jsonoptions)}");
                     console.Out.WriteLine();
                 }

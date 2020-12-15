@@ -1,27 +1,20 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="TestdataOptions.cs" company="DTV-Online">
+// <copyright file="AppSettings.cs" company="DTV-Online">
 //   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>10-12-2020 17:09</created>
+// <created>14-12-2020 15:00</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityApp.Options
+namespace UtilityWeb.Models
 {
-    #region Using Directives
-
-    using UtilityApp.Models;
-
-    #endregion
-
     /// <summary>
-    ///  A collection of options for the validate command. The testdata fields are used as options too.
+    /// Application specific settings using data settings.
     /// </summary>
-    internal class TestdataOptions : TestData
+    public sealed class AppSettings
     {
-        public bool Data { get; set; }
-        public bool Json { get; set; }
+        public SettingsData Data { get; set; } = new SettingsData();
     }
 }

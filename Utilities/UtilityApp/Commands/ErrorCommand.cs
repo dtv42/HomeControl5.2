@@ -44,8 +44,8 @@ namespace UtilityApp.Commands
                 description: "Throw an exception")
             );
 
-            // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, bool, bool>((console, verbose, exception) =>
+            // Setup execution handler returning custom result code or throw an exception.
+            Handler = CommandHandler.Create<InvocationContext, IConsole, bool, bool>((context, console, verbose, exception) =>
             {
                 logger.LogDebug("Handler()");
 
@@ -55,8 +55,10 @@ namespace UtilityApp.Commands
                     console.Out.WriteLine();
                 }
 
+                // Set the custom result code and throw the exception.
                 if (exception)
                 {
+                    context.ResultCode = (int)ExitCodes.UnhandledException;
                     throw new System.Exception("Application exception thrown");
                 }
 

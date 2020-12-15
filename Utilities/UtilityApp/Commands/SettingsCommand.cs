@@ -18,11 +18,11 @@ namespace UtilityApp.Commands
     using System.Linq;
     using System.Text.Json;
 
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
     using UtilityApp.Models;
-    using Microsoft.Extensions.Configuration;
 
     #endregion Using Directives
 
@@ -49,18 +49,29 @@ namespace UtilityApp.Commands
                 description: "Show option settings")
             );
 
+            // Setup command options.
+            AddOption(new Option<bool>(
+                aliases: new string[] { "-j", "--json" },
+                description: "Show application settings (JSON)")
+            );
+
             // Get settings from configuration.
             AppSettings settings = new AppSettings();
             configuration.GetSection("AppSettings").Bind(settings);
 
             // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, bool, bool>((console, verbose, options) =>
+            Handler = CommandHandler.Create<IConsole, bool, bool, bool>((console, verbose, options, json) =>
             {
                 logger.LogDebug("Handler()");
 
                 if (verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                    console.Out.WriteLine();
+                }
+
+                if (json)
+                {
                     console.Out.WriteLine($"AppSettings: {JsonSerializer.Serialize(settings, _jsonoptions)}");
                     console.Out.WriteLine();
                 }

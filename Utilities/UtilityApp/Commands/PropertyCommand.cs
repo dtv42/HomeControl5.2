@@ -59,10 +59,10 @@ namespace UtilityApp.Commands
 
             AddOption(new Option<bool>(new string[] { "-p", "--properties"   }, "Show all properties"));
             AddOption(new Option<bool>(new string[] { "-s", "--simple"       }, "Show simple properties"));
-            AddOption(new Option<bool>(new string[] { "-a", "--arrays"       }, "Show arrays"));
-            AddOption(new Option<bool>(new string[] { "-l", "--lists"        }, "Show lists"));
-            AddOption(new Option<bool>(new string[] { "-d", "--dictionaries" }, "Show dictionaries"));
-            AddOption(new Option<bool>(new string[] { "-v", "--value"        }, "Show value"));
+            AddOption(new Option<bool>(new string[] { "-a", "--arrays"       }, "Show array properties"));
+            AddOption(new Option<bool>(new string[] { "-l", "--lists"        }, "Show list properties"));
+            AddOption(new Option<bool>(new string[] { "-d", "--dictionaries" }, "Show dictionarie properties"));
+            AddOption(new Option<bool>(new string[] { "-v", "--value"        }, "Show property value"));
 
             // Add custom validation.
             AddValidator(r =>
@@ -97,7 +97,8 @@ namespace UtilityApp.Commands
 
                     foreach (var info in properties)
                     {
-                        if ((options.All || options.Simple) && (info?.PropertyType.IsArray ?? false) && (info.GetValue(settings) is Array))
+                        // Show array properties.
+                        if ((options.All || options.Arrays) && (info?.PropertyType.IsArray ?? false) && (info.GetValue(settings) is Array))
                         {
                             console.Out.WriteLine($"Property {info.Name}");
                             console.Out.WriteLine($"    CanRead:       {info.CanRead}");
@@ -117,7 +118,8 @@ namespace UtilityApp.Commands
                                 }
                             }
                         }
-                        else if ((options.All || options.Simple) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IList))
+                        // Show list properties.
+                        else if ((options.All || options.Lists) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IList))
                         {
                             console.Out.WriteLine($"Property {info.Name}");
                             console.Out.WriteLine($"    CanRead:       {info.CanRead}");
@@ -137,6 +139,7 @@ namespace UtilityApp.Commands
                                 }
                             }
                         }
+                        // Show dictionary properties.
                         else if ((options.All || options.Dictionaries) && (info?.PropertyType.IsGenericType ?? false) && (info.GetValue(settings) is IDictionary))
                         {
                             console.Out.WriteLine($"Property {info.Name}");
@@ -162,6 +165,7 @@ namespace UtilityApp.Commands
                                 }
                             }
                         }
+                        // Show simple properties.
                         else if ((options.All || options.Simple) && !(info?.PropertyType.IsArray ?? false) && !(info?.PropertyType.IsGenericType ?? false))
                         {
                             console.Out.WriteLine($"Property {info?.Name}");

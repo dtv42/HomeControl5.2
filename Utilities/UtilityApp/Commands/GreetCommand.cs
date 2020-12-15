@@ -8,7 +8,7 @@
 // <created>2-12-2020 11:57</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace UtilityApp
+namespace UtilityApp.Commands
 {
     #region Using Directives
 

@@ -21,6 +21,7 @@ namespace UtilityWeb
     using Microsoft.OpenApi.Models;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
 
     #endregion Using Directives
 
@@ -36,7 +37,8 @@ namespace UtilityWeb
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddHealthChecks()
+                    .AddCheck("ping1", new PingHealthCheck("www.google.com", 100));
             services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions());
             services.AddSwaggerGen(c =>
             {
@@ -60,6 +62,7 @@ namespace UtilityWeb
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapHealthChecks("health");
                 endpoints.MapControllers();
             });
         }

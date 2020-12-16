@@ -60,14 +60,66 @@ namespace UtilityLib.Console
             return option;
         }
 
+        public static Option<byte> FromAmong(this Option<byte> option, params byte[] values)
+        {
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
+        public static Option<short> FromAmong(this Option<short> option, params short[] values)
+        {
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
+        public static Option<ushort> FromAmong(this Option<ushort> option, params ushort[] values)
+        {
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
         public static Option<int> FromAmong(this Option<int> option, params int[] values)
         {
-            option.FromAmong(values.ToList<int>().Select(v => v.ToString()).ToArray());
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
+        public static Option<uint> FromAmong(this Option<uint> option, params uint[] values)
+        {
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
+        public static Option<long> FromAmong(this Option<long> option, params long[] values)
+        {
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
+        public static Option<ulong> FromAmong(this Option<ulong> option, params ulong[] values)
+        {
+            option.FromAmong(values.ToList().Select(v => v.ToString()).ToArray());
+            return option;
+        }
+
+        public static Option<float> Range(this Option<float> option, float minimum, float maximum)
+        {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<float>();
+                if ((value >= minimum) && (value <= maximum)) return null;
+                return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
+            });
+
             return option;
         }
 
         public static Option<double> Range(this Option<double> option, double minimum, double maximum)
         {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
             option.Argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<double>();
@@ -78,8 +130,52 @@ namespace UtilityLib.Console
             return option;
         }
 
+        public static Option<byte> Range(this Option<byte> option, byte minimum, byte maximum)
+        {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<byte>();
+                if ((value >= minimum) && (value <= maximum)) return null;
+                return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
+            });
+
+            return option;
+        }
+
+        public static Option<short> Range(this Option<short> option, short minimum, short maximum)
+        {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<short>();
+                if ((value >= minimum) && (value <= maximum)) return null;
+                return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
+            });
+
+            return option;
+        }
+
+        public static Option<ushort> Range(this Option<ushort> option, ushort minimum, ushort maximum)
+        {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<ushort>();
+                if ((value >= minimum) && (value <= maximum)) return null;
+                return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
+            });
+
+            return option;
+        }
+
         public static Option<int> Range(this Option<int> option, int minimum, int maximum)
         {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
             option.Argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<int>();
@@ -90,11 +186,41 @@ namespace UtilityLib.Console
             return option;
         }
 
+        public static Option<uint> Range(this Option<uint> option, uint minimum, uint maximum)
+        {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<uint>();
+                if ((value >= minimum) && (value <= maximum)) return null;
+                return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
+            });
+
+            return option;
+        }
+
         public static Option<long> Range(this Option<long> option, long minimum, long maximum)
         {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
             option.Argument.AddValidator(r =>
             {
                 var value = r.GetValueOrDefault<long>();
+                if ((value >= minimum) && (value <= maximum)) return null;
+                return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
+            });
+
+            return option;
+        }
+
+        public static Option<ulong> Range(this Option<ulong> option, ulong minimum, ulong maximum)
+        {
+            if (minimum > maximum) throw new ArgumentException("The minimum value has to be smaller than the maximum value.");
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<ulong>();
                 if ((value >= minimum) && (value <= maximum)) return null;
                 return $"{r.Symbol.Name} value must be between {minimum} and {maximum} (incl.)";
             });

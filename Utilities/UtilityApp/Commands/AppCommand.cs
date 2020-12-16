@@ -32,10 +32,6 @@ namespace UtilityApp.Commands
     /// </summary>
     public sealed class AppCommand : BaseRootCommand
     {
-        #region Private Data Members
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -44,9 +40,22 @@ namespace UtilityApp.Commands
         /// <param name="configuration">The configuration instance.</param>
         /// <param name="options">The root command options.</param>
         /// <param name="logger">The logger instance.</param>
-        public AppCommand(IConfiguration configuration, GlobalOptions options, ILogger<AppCommand> logger)
+        public AppCommand(IConfiguration configuration,
+                          GlobalOptions options,
+                          TestCommand testCommand,
+                          AsyncCommand asyncCommand,
+                          ErrorCommand errorCommand,
+                          GreetCommand greetCommand,
+                          LoggingCommand loggingCommand,
+                          PropertyCommand propertyCommand,
+                          SettingsCommand settingsCommand,
+                          TestdataCommand testdataCommand,
+                          ValidateCommand validateCommand,
+                          ILogger<AppCommand> logger)
             : base(options, logger, "Console app root command.")
         {
+            logger.LogDebug("AppCommand()");
+
             // Adding global options to the default global options.
             AddGlobalOption(new Option<string>(
                 alias: "--host",
@@ -63,13 +72,21 @@ namespace UtilityApp.Commands
                 .Name("string")
             );
 
+            // Adding sub commands to root command.
+            AddCommand(testCommand);
+            AddCommand(asyncCommand);
+            AddCommand(errorCommand);
+            AddCommand(greetCommand);
+            AddCommand(loggingCommand);
+            AddCommand(propertyCommand);
+            AddCommand(settingsCommand);
+            AddCommand(testdataCommand);
+            AddCommand(validateCommand);
+
+            // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, GlobalOptions>((console, options) =>
             {
                 logger.LogDebug("Handler()");
-
-                // Get settings from configuration.
-                AppSettings settings = new AppSettings();
-                configuration.GetSection("AppSettings").Bind(settings);
 
                 if (options.Verbose)
                 {
@@ -82,6 +99,10 @@ namespace UtilityApp.Commands
                     console.Out.WriteLine($"Host:          {options.Host}");
                     console.Out.WriteLine();
                 }
+
+                // Get settings from configuration.
+                AppSettings settings = new AppSettings();
+                configuration.GetSection("AppSettings").Bind(settings);
 
                 ShowSettings(console, options, settings);
                 ShowConfiguration(console, options, configuration);

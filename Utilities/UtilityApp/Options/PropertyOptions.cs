@@ -18,7 +18,13 @@ namespace UtilityApp.Options
         #region Constructors
 
         /// <summary>
-        ///  The constructor maps the input parameters to the properties.
+        ///  Initializes a new instance of the <see cref="PropertyOptions"/> class.
+        /// </summary>
+        public PropertyOptions() { }
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="PropertyOptions"/> class
+        ///  mapping the input parameters to the corresponding properties.
         /// </summary>
         /// <param name="p"></param>
         /// <param name="s"></param>

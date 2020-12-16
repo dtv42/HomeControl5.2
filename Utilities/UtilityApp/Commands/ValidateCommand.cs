@@ -27,7 +27,7 @@ namespace UtilityApp.Commands
     /// <summary>
     ///  Sample of a sub command with various options and validation.
     /// </summary>
-    internal sealed class ValidateCommand : Command
+    public sealed class ValidateCommand : Command
     {
         #region Constructors
 

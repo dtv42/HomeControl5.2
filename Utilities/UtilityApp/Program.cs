@@ -12,13 +12,17 @@ namespace UtilityApp
 {
     #region Using Directives
 
+    using System;
+    using System.CommandLine;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
 
     using Serilog;
 
+    using UtilityLib;
     using UtilityLib.Console;
     using UtilityApp.Commands;
     using UtilityApp.Options;
@@ -39,39 +43,68 @@ namespace UtilityApp
         /// <returns>When complete, an integer representing success (0) or failure (non-0).</returns>
         public static async Task<int> Main(string[] args)
         {
-            // Create host using serilog, adding commands and options services.
-            return await Host.CreateDefaultBuilder()
-                .ConfigureHostConfiguration(config =>
-                {
+            try
+            {
+                // Create host using serilog, adding commands and options services.
+                return await Host.CreateDefaultBuilder()
+                    .ConfigureHostConfiguration(config =>
+                    {
 
-                })
-                .ConfigureAppConfiguration(config =>
-                {
-                    config.AddJsonFile("testdata.json", optional: false, reloadOnChange: false);
-                })
-                .ConfigureServices((context, services) =>
-                {
-                    services
-                        .AddCommand<ErrorCommand>()
-                        .AddCommand<AsyncCommand>()
-                        .AddCommand<LoggingCommand>()
-                        .AddCommand<SettingsCommand>()
-                        .AddCommandOptions<GreetCommand, GreetOptions>()
-                        .AddCommandOptions<PropertyCommand, PropertyOptions>()
-                        .AddCommandOptions<TestdataCommand, TestdataOptions>()
-                        .AddCommandOptions<ValidateCommand, ValidateOptions>()
-                        .AddRootCommandOptions<AppCommand, GlobalOptions>();
-                })
-                .ConfigureLogging((context, logger) =>
-                {
+                    })
+                    .ConfigureAppConfiguration(config =>
+                    {
+                        config.AddJsonFile("testdata.json", optional: false, reloadOnChange: false);
+                    })
+                    .ConfigureServices((context, services) =>
+                    {
+                        services
+                            // Add command options.
+                            .AddSingletonFromSection<GlobalOptions>()
+                            .AddSingletonFromSection<GreetOptions>()
+                            .AddSingleton<TestOptions>()
+                            .AddSingleton<PropertyOptions>()
+                            .AddSingleton<TestdataOptions>()
+                            .AddSingleton<ValidateOptions>()
+                            // Add commands.
+                            .AddSingleton<TestCommand>()
+                            .AddSingleton<ErrorCommand>()
+                            .AddSingleton<AsyncCommand>()
+                            .AddSingleton<LoggingCommand>()
+                            .AddSingleton<SettingsCommand>()
+                            .AddSingleton<GreetCommand>()
+                            .AddSingleton<PropertyCommand>()
+                            .AddSingleton<TestdataCommand>()
+                            .AddSingleton<ValidateCommand>()
+                            // Add root command.
+                            .AddSingleton<RootCommand, AppCommand>();
+                    })
+                    .ConfigureLogging((context, logger) =>
+                    {
 
-                })
-                .UseSerilog((context, logger) =>
+                    })
+                    .UseSerilog((context, logger) =>
+                    {
+                        logger.ReadFrom.Configuration(context.Configuration);
+                    })
+                    .Build()
+                    .RunCommandLineAsync(args);
+            }
+            catch (Exception exception)
+            {
                 {
-                    logger.ReadFrom.Configuration(context.Configuration);
-                })
-                .Build()
-                .RunCommandLineAsync(args);
+                    Console.ForegroundColor = ConsoleColor.Red;
+
+                    Console.Error.WriteLine($"Unhandled exception: {exception.Message}");
+
+                    if (exception.InnerException is not null)
+                    {
+                        Console.Error.WriteLine($"    Inner Exception: {exception.InnerException.Message}");
+                    }
+
+                    Console.ResetColor();
+                    return (int)ExitCodes.UnhandledException;
+                }
+            }
         }
     }
 }

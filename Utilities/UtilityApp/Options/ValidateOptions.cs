@@ -13,12 +13,18 @@ namespace UtilityApp.Options
     /// <summary>
     ///  A collection of options for the validate command.
     /// </summary>
-    internal class ValidateOptions
+    public class ValidateOptions
     {
         #region Constructors
 
         /// <summary>
-        ///  The constructor maps the input parameters to the corresponding properties.
+        ///  Initializes a new instance of the <see cref="ValidateOptions"/> class.
+        /// </summary>
+        public ValidateOptions() { }
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="ValidateOptions"/> class
+        ///  mapping the input parameters to the corresponding properties.
         /// </summary>
         /// <param name="d"></param>
         /// <param name="v"></param>
@@ -65,14 +71,14 @@ namespace UtilityApp.Options
         public int IntegerR { get; set; }
         public long IntegerL { get; set; }
 
-        public string StringS { get; set; }
-        public string StringM { get; set; }
-        public string StringE { get; set; }
-        public string StringW { get; set; }
-        public string StringX { get; set; }
-        public string StringG { get; set; }
-        public string StringA { get; set; }
-        public string StringP { get; set; }
-        public string StringU { get; set; }
+        public string StringS { get; set; } = string.Empty;
+        public string StringM { get; set; } = string.Empty;
+        public string StringE { get; set; } = string.Empty;
+        public string StringW { get; set; } = string.Empty;
+        public string StringX { get; set; } = string.Empty;
+        public string StringG { get; set; } = string.Empty;
+        public string StringA { get; set; } = string.Empty;
+        public string StringP { get; set; } = string.Empty;
+        public string StringU { get; set; } = string.Empty;
     }
 }

@@ -12,7 +12,7 @@ namespace UtilityLib.Console
 {
     #region Using Directives
 
-    using System.CommandLine;
+    using System;
     using System.CommandLine.Parsing;
     using System.Linq;
 
@@ -23,15 +23,37 @@ namespace UtilityLib.Console
     /// </summary>
     public static class ParserExtensions
     {
+        // 
+
+
         /// <summary>
-        /// Checks if a token matches one of the option aliases.
+        /// Checks if the commandline contains a named argument.
         /// </summary>
-        /// <param name="result">The parse result instance.</param>
-        /// <param name="option">The command line option.</param>
-        /// <returns></returns>
-        public static bool Has(this ParseResult result, Option option)
+        /// <param name="parseResult">The commandline parser result.</param>
+        /// <returns>True if an argument found.</returns>      
+        public static bool HasArgument(this ParseResult parseResult)
         {
-            return result.Tokens.Any(t => option.Aliases.Any(a => a == t.Value));
+            if (parseResult is null)
+            {
+                throw new ArgumentNullException(nameof(parseResult));
+            }
+
+            return parseResult.Tokens.Any(t => t.Type == TokenType.Argument);
+        }
+
+        /// <summary>
+        /// Returns the number of arguments found.
+        /// </summary>
+        /// <param name="parseResult">The commandline parser result.</param>
+        /// <returns>The number of arguments.</returns>
+        public static int ArgumentCount(this ParseResult parseResult)
+        {
+            if (parseResult is null)
+            {
+                throw new ArgumentNullException(nameof(parseResult));
+            }
+
+            return parseResult.Tokens.Count(t => t.Type == TokenType.Argument);
         }
     }
 }

@@ -59,7 +59,9 @@ namespace UtilityTest
         [Theory]
         [InlineData("",                        "Hello Console!",                       ExitCodes.SuccessfullyCompleted)]
         [InlineData("",                        "Time elapsed",                         ExitCodes.SuccessfullyCompleted)]
-        [InlineData("--password test",         "Time elapsed",                         ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--password secret",       "Time elapsed",                         ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--password=secret",       "Time elapsed",                         ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--password:secret",       "Time elapsed",                         ExitCodes.SuccessfullyCompleted)]
         [InlineData("--host http://localhost", "Time elapsed",                         ExitCodes.SuccessfullyCompleted)]
         [InlineData("-?",                      "UtilityApp [options] [command]",       ExitCodes.SuccessfullyCompleted)]
         [InlineData("--help",                  "UtilityApp [options] [command]",       ExitCodes.SuccessfullyCompleted)]
@@ -70,6 +72,30 @@ namespace UtilityTest
         [InlineData("-",                       "Unrecognized command or argument '-'", ExitCodes.IncorrectFunction    )]
         [InlineData("---",                     "'---' was not matched.",               ExitCodes.IncorrectFunction    )]
         public void TestAppCommand(string args, string text, ExitCodes exit)
+        {
+            var (code, result) = StartConsoleApplication(args);
+            Assert.Equal((int)exit, code);
+            Assert.Contains(text, result);
+        }
+
+        [Theory]
+        [InlineData("test XXX",             "Time elapsed",                                 ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test XXX",             "1 Argument(s) provided",                       ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test XXX YYY",         "Time elapsed",                                 ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test XXX YYY",         "2 Argument(s) provided",                       ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a",              "Time elapsed",                                 ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a",              "Option A provided",                            ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a --verbose",    "Commandline Application: UtilityApp",          ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a -h",           "Time elapsed",                                 ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a -h",           "Option A provided",                            ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a -h",           "Option H provided",                            ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -a --hoption",    "Time elapsed",                                 ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test -?",              "UtilityApp test [options] [<name> [<value>]]", ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test --help",          "UtilityApp test [options] [<name> [<value>]]", ExitCodes.SuccessfullyCompleted)]
+        [InlineData("test",                 "Please select at least one option (-a|-b|-c)", ExitCodes.IncorrectFunction    )]
+        [InlineData("test --verbose",       "Please select at least one option (-a|-b|-c)", ExitCodes.IncorrectFunction    )]
+        [InlineData("test -h",              "Please select at least one option (-a|-b|-c)", ExitCodes.IncorrectFunction    )]
+        public void TestTestCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
             Assert.Equal((int)exit, code);

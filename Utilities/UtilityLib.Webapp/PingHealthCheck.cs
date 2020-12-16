@@ -21,6 +21,9 @@ namespace UtilityLib.Webapp
 
     #endregion Using Directives
 
+    /// <summary>
+    /// Helper class implementing a ping health check.
+    /// </summary>
     public class PingHealthCheck : IHealthCheck
     {
         #region Private Data Members
@@ -55,7 +58,7 @@ namespace UtilityLib.Webapp
         /// </summary>
         /// <param name="context">A context object associated with the current execution.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the health check.</param>
-        /// <returns></returns>
+        /// <returns>A HealthCheckResult object.</returns>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             if (_pingInterval != 0 && _lastPingTime.AddSeconds(_pingInterval) > DateTime.Now)

@@ -45,14 +45,6 @@ namespace UtilityLib.Console
             var rootCommand = serviceProvider.GetRequiredService<RootCommand>();
             var commandLineBuilder = new CommandLineBuilder(rootCommand);
 
-            foreach (Command command in serviceProvider.GetServices<Command>())
-            {
-                if (rootCommand.GetType().Name != command.GetType().Name)
-                {
-                    commandLineBuilder.AddCommand(command);
-                }
-            }
-
             // Setup the parser using defaults and overrides the exception handler.
             var parser = commandLineBuilder
                 .UseVersionOption()
@@ -69,16 +61,15 @@ namespace UtilityLib.Console
                 .UseExceptionHandler((exception, context) =>
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    
+
+                    context.Console.Error.WriteLine($"Unhandled exception: {exception.Message}");
+
                     if (exception.InnerException is not null)
                     {
-                        context.Console.Error.WriteLine($"Exception: {exception.InnerException.Message}");
+                        context.Console.Error.WriteLine($"    Inner Exception: {exception.InnerException.Message}");
                     }
-                    else
-                    {
-                        context.Console.Error.WriteLine($"Unhandled exception: {exception.Message}");
-                        context.ResultCode = (int)ExitCodes.UnhandledException;
-                    }
+
+                    context.ResultCode = (int)ExitCodes.UnhandledException;
 
                     Console.ResetColor();
                 })

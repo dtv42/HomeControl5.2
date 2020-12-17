@@ -981,7 +981,7 @@ namespace NModbus.Extensions
 
             if (data.Length == 1)
             {
-                return !(data[0] == 0);
+                return data[0] != 0;
             }
             else
             {
@@ -1208,7 +1208,7 @@ namespace NModbus.Extensions
             for (int i = 0; i < data.Length; i++)
             {
                 ushort[] slice = new ushort[] { data[i] };
-                values[i] = !(slice.ToUShort(swapBytes) == 0);
+                values[i] = slice.ToUShort(swapBytes) != 0;
             }
 
             return values;
@@ -1476,9 +1476,10 @@ namespace NModbus.Extensions
         /// <param name="startAddress">Address to begin writing.</param>
         /// <param name="value">uint value to be written.</param>
         /// <returns>The task representing the async void write bool method.</returns>
-        public static async Task WriteBoolAsync(this IModbusMaster master, byte slaveAddress, ushort startAddress, bool value)
+        public static async Task WriteBoolAsync(this IModbusMaster master, byte slaveAddress, ushort startAddress, bool value, bool swapBytes = false)
         {
-            await master.WriteSingleCoilAsync(slaveAddress, startAddress, value);
+            ushort[] data = (value ? (ushort)1 : (ushort)0).ToRegisters(swapBytes);
+            await master.WriteSingleRegisterAsync(slaveAddress, startAddress, data[0]);
         }
 
         /// <summary>
@@ -1629,9 +1630,16 @@ namespace NModbus.Extensions
         /// <param name="startAddress">Address to begin writing.</param>
         /// <param name="values">Array of boolean values to be written.</param>
         /// <returns>The task representing the async void write bool array method.</returns>
-        public static async Task WriteBoolArrayAsync(this IModbusMaster master, byte slaveAddress, ushort startAddress, bool[] values)
+        public static async Task WriteBoolArrayAsync(this IModbusMaster master, byte slaveAddress, ushort startAddress, bool[] values, bool swapBytes = false)
         {
-            await master.WriteMultipleCoilsAsync(slaveAddress, startAddress, values);
+            ushort[] data = new ushort[values.Length];
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                data[i] = (values[i] ? (ushort)1 : (ushort)0).ToRegisters(swapBytes)[0];
+            }
+
+            await master.WriteMultipleRegistersAsync(slaveAddress, startAddress, data);
         }
 
         /// <summary>

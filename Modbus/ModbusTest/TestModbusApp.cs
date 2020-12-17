@@ -30,8 +30,9 @@ namespace ModbusTest
         /// Starts the console application. Specify empty string to run with no arguments.
         /// </summary>
         /// <param name="args">The arguments for the console application.</param>
+        /// <param name="delay">The optional wait for exit delay in msec.</param>
         /// <returns>The exit code.</returns>
-        private (int code, string result) StartConsoleApplication(string args, int delay = 10000)
+        private static (int code, string result) StartConsoleApplication(string args, int delay = 1000)
         {
             var sw = new StringWriter();
             Console.SetOut(sw);
@@ -51,7 +52,7 @@ namespace ModbusTest
             proc.StartInfo.RedirectStandardError = true;
 
             // set working directory
-            proc.StartInfo.WorkingDirectory = @"C:\Users\peter\source\repos\HomeControl.5.1\Modbus\ModbusApp\";
+            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl5.2\Modbus\ModbusApp\";
 
             // start and wait for exit
             proc.Start();
@@ -68,18 +69,18 @@ namespace ModbusTest
         #endregion Private Methods
 
         [Theory]
-        [InlineData("-?",        "ModbusApp [options] [command]",        ExitCodes.SuccessfullyCompleted)]
-        [InlineData("--help",    "ModbusApp [options] [command]",        ExitCodes.SuccessfullyCompleted)]
-        [InlineData("--config",  "Configuration:",                       ExitCodes.SuccessfullyCompleted)]
-        [InlineData("--verbose", "Commandline Application: ModbusApp",   ExitCodes.SuccessfullyCompleted)]
-        [InlineData("--version", "1.0.0",                                ExitCodes.SuccessfullyCompleted)]
-        [InlineData("",          "Specify verbose or config option",     ExitCodes.IncorrectFunction)]
-        [InlineData("-",         "Unrecognized command or argument '-'", ExitCodes.IncorrectFunction)]
-        [InlineData("---",       "'---' was not matched.",               ExitCodes.IncorrectFunction)]
-        public void TestRootCommand(string args, string text, int exit)
+        [InlineData("-?",              "ModbusApp [options] [command]",                              ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--help",          "ModbusApp [options] [command]",                              ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--verbose",       "Commandline Application: ModbusApp",                         ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--configuration", "Configuration:",                                             ExitCodes.SuccessfullyCompleted)]
+        [InlineData("--version",       "2.0.0",                                                      ExitCodes.SuccessfullyCompleted)]
+        [InlineData("",                "Please select at least an option or specify a sub command.", ExitCodes.IncorrectFunction)]
+        [InlineData("-",               "Unrecognized command or argument '-'",                       ExitCodes.IncorrectFunction)]
+        [InlineData("---",             "'---' was not matched.",                                     ExitCodes.IncorrectFunction)]
+        public void TestRootCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -92,7 +93,7 @@ namespace ModbusTest
         [InlineData("rtu --stopbits one",    "RTU serial port found",             ExitCodes.SuccessfullyCompleted)]
         [InlineData("rtu --slaveid 1",       "RTU serial port found",             ExitCodes.SuccessfullyCompleted)]
         [InlineData("rtu --serialport COM0", "RTU serial port not found",         ExitCodes.NotSuccessfullyCompleted)]
-        [InlineData("rtu --baudrate 1000",   "Invalid Baudrate",                  ExitCodes.IncorrectFunction)]
+        [InlineData("rtu --baudrate 1000",   "Argument '1000' not recognized.",   ExitCodes.IncorrectFunction)]
         [InlineData("rtu --parity uneven",   "Cannot parse argument",             ExitCodes.IncorrectFunction)]
         [InlineData("rtu --databits 4",      "DataBits value must be between",    ExitCodes.IncorrectFunction)]
         [InlineData("rtu --stopbits five",   "Cannot parse argument",             ExitCodes.IncorrectFunction)]
@@ -100,10 +101,10 @@ namespace ModbusTest
         [InlineData("rtu --verbose",         "Modbus Commandline Application:",   ExitCodes.SuccessfullyCompleted)]
         [InlineData("rtu -?",                "ModbusApp rtu [options] [command]", ExitCodes.SuccessfullyCompleted)]
         [InlineData("rtu --help",            "ModbusApp rtu [options] [command]", ExitCodes.SuccessfullyCompleted)]
-        public void TestRtuCommand(string args, string text, int exit)
+        public void TestRtuCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -127,10 +128,10 @@ namespace ModbusTest
         [InlineData("rtu read",              "Specify a single read option",          ExitCodes.IncorrectFunction)]
         [InlineData("rtu read -?",           "Supporting Modbus RTU read operations", ExitCodes.IncorrectFunction)]
         [InlineData("rtu read --help",       "Supporting Modbus RTU read operations", ExitCodes.IncorrectFunction)]
-        public void TestRtuReadCommand(string args, string text, int exit)
+        public void TestRtuReadCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -154,10 +155,10 @@ namespace ModbusTest
         [InlineData("rtu write",                           "Specify a single write option",             ExitCodes.IncorrectFunction)]
         [InlineData("rtu write -?",                        "Supporting Modbus RTU write operations",    ExitCodes.IncorrectFunction)]
         [InlineData("rtu write --help",                    "Supporting Modbus RTU write operations",    ExitCodes.IncorrectFunction)]
-        public void TestRtuWriteReadCommand(string args, string text, int exit)
+        public void TestRtuWriteCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -184,10 +185,10 @@ namespace ModbusTest
         [InlineData("rtu monitor",              "Specify a single read option",             ExitCodes.IncorrectFunction)]
         [InlineData("rtu monitor -?",           "Supporting Modbus RTU monitor operations", ExitCodes.IncorrectFunction)]
         [InlineData("rtu monitor --help",       "Supporting Modbus RTU monitor operations", ExitCodes.IncorrectFunction)]
-        public void TestRtuMonitorReadCommand(string args, string text, int exit)
+        public void TestRtuMonitorReadCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -196,10 +197,10 @@ namespace ModbusTest
         [InlineData("tcp --verbose", "Modbus Commandline Application:",   ExitCodes.SuccessfullyCompleted)]
         [InlineData("tcp -?",        "ModbusApp tcp [options] [command]", ExitCodes.SuccessfullyCompleted)]
         [InlineData("tcp --help",    "ModbusApp tcp [options] [command]", ExitCodes.SuccessfullyCompleted)]
-        public void TestTcpCommand(string args, string text, int exit)
+        public void TestTcpCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -223,10 +224,10 @@ namespace ModbusTest
         [InlineData("tcp read",              "Specify a single read option",          ExitCodes.IncorrectFunction)]
         [InlineData("tcp read -?",           "Supporting Modbus TCP read operations", ExitCodes.IncorrectFunction)]
         [InlineData("tcp read --help",       "Supporting Modbus TCP read operations", ExitCodes.IncorrectFunction)]
-        public void TestTcpReadCommand(string args, string text, int exit)
+        public void TestTcpReadCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -250,10 +251,10 @@ namespace ModbusTest
         [InlineData("tcp write",                           "Specify a single write option",             ExitCodes.IncorrectFunction)]
         [InlineData("tcp write -?",                        "Supporting Modbus TCP write operations",    ExitCodes.IncorrectFunction)]
         [InlineData("tcp write --help",                    "Supporting Modbus TCP write operations",    ExitCodes.IncorrectFunction)]
-        public void TestTcpWriteCommand(string args, string text, int exit)
+        public void TestTcpWriteCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
 
@@ -280,10 +281,10 @@ namespace ModbusTest
         [InlineData("tcp monitor",              "Specify a single read option",             ExitCodes.IncorrectFunction)]
         [InlineData("tcp monitor -?",           "Supporting Modbus TCP monitor operations", ExitCodes.IncorrectFunction)]
         [InlineData("tcp monitor --help",       "Supporting Modbus TCP monitor operations", ExitCodes.IncorrectFunction)]
-        public void TestTcpMonitorCommand(string args, string text, int exit)
+        public void TestTcpMonitorCommand(string args, string text, ExitCodes exit)
         {
             var (code, result) = StartConsoleApplication(args);
-            Assert.Equal(exit, code);
+            Assert.Equal((int)exit, code);
             Assert.Contains(text, result);
         }
     }

@@ -13,10 +13,10 @@ namespace ModbusTCP
     #region Using Directives
 
     using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Hosting;
 
-    using UtilityLib;
-    using ModbusTCP.Models;
+    using Serilog;
 
     #endregion Using Directives
 
@@ -35,16 +35,20 @@ namespace ModbusTCP
         }
 
         /// <summary>
-        ///  Helper function to prepare testdata and services.
+        ///  Helper function to prepare testdata and logging.
         /// </summary>
-        /// <param name="args"></param>
-        /// <returns>The host builder instance</returns>
+        /// <param name="args">The command line arguments.</param>
+        /// <returns>The host builder instance.</returns>
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.ConfigureBaseHost<AppSettings>()
-                              .UseStartup<Startup>();
+                    webBuilder
+                        .UseSerilog((context, logger) =>
+                        {
+                            logger.ReadFrom.Configuration(context.Configuration);
+                        })
+                        .UseStartup<Startup>();
                 });
     }
 }

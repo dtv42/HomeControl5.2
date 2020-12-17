@@ -53,19 +53,13 @@ namespace ModbusTCP.Controllers
         /// Initializes a new instance of the <see cref="ROSingleController"/> class.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public ROSingleController(ITcpModbusClient client,
-                                  AppSettings settings,
-                                  IConfiguration config,
-                                  IHostEnvironment environment,
-                                  IHostApplicationLifetime lifetime,
-                                  ILogger<ROSingleController> logger)
-            : base(client, settings, config, environment, lifetime, logger)
-        { }
+        public ROSingleController(ITcpModbusClient client, IConfiguration configuration, ILogger<CoilController> logger)
+            : base(client, configuration, logger)
+        {
+            _logger.LogDebug("ROSingleController()");
+        }
 
         #endregion
 

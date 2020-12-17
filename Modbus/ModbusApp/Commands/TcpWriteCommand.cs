@@ -107,19 +107,19 @@ namespace ModbusApp.Commands
                     {
                         // Writing coils.
                         CommandHelper.WritingCoils(console,
-                                                  client,
-                                                  options.TcpSlave.ID,
-                                                  options.Offset,
-                                                  options.Coil);
+                                                   client,
+                                                   options.TcpSlave.ID,
+                                                   options.Offset,
+                                                   options.Coil);
 
                         // Writing holding registers.
                         CommandHelper.WritingHoldingRegisters(console,
-                                                             client,
-                                                             options.TcpSlave.ID,
-                                                             options.Offset,
-                                                             options.Holding,
-                                                             options.Type,
-                                                             options.Hex);
+                                                              client,
+                                                              options.TcpSlave.ID,
+                                                              options.Offset,
+                                                              options.Holding,
+                                                              options.Type,
+                                                              options.Hex);
                     }
                     else
                     {

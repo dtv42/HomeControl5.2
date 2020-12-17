@@ -14,6 +14,7 @@ namespace ModbusRTU
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
+
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -22,6 +23,7 @@ namespace ModbusRTU
     using ModbusLib;
     using ModbusLib.Models;
     using ModbusRTU.Models;
+
     using UtilityLib;
 
     #endregion Using Directives
@@ -60,12 +62,7 @@ namespace ModbusRTU
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "Modbus RTU Gateway API",
-                    Description = "This is a web gateway service to access Modbus RTU slave devices.",
-                    Version = "v1"
-                });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ModbusRTU", Version = "v1" });
             });
         }
 
@@ -81,17 +78,12 @@ namespace ModbusRTU
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
-
             app.UseRouting();
 
             app.UseAuthorization();
 
             app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Modbus RTU Gateway API V1");
-            });
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ModbusRTU v1"));
 
             app.UseEndpoints(endpoints =>
             {

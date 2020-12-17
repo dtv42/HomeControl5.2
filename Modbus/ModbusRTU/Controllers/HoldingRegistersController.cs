@@ -45,19 +45,13 @@ namespace ModbusRTU.Controllers
         /// Initializes a new instance of the <see cref="HoldingRegistersController"/> class.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public HoldingRegistersController(IRtuModbusClient client,
-                                          AppSettings settings,
-                                          IConfiguration config,
-                                          IHostEnvironment environment,
-                                          IHostApplicationLifetime lifetime,
-                                          ILogger<HoldingRegistersController> logger)
-            : base(client, settings, config, environment, lifetime, logger)
-        { }
+        public HoldingRegistersController(IRtuModbusClient client, IConfiguration configuration, ILogger<CoilController> logger)
+            : base(client, configuration, logger)
+        {
+            _logger.LogDebug("HoldingRegistersController()");
+        }
 
         #endregion
 

@@ -14,14 +14,16 @@ namespace ModbusTCP
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
+
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
     using ModbusLib;
-    using ModbusTCP.Models;
     using ModbusLib.Models;
+    using ModbusTCP.Models;
+
     using UtilityLib;
 
     #endregion Using Directives
@@ -60,12 +62,7 @@ namespace ModbusTCP
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "Modbus TCP Gateway API",
-                    Description = "This is a web gateway service to access Modbus TCP slave devices.",
-                    Version = "v1"
-                });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ModbusTCP", Version = "v1" });
             });
         }
 
@@ -81,17 +78,12 @@ namespace ModbusTCP
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
-
             app.UseRouting();
 
             app.UseAuthorization();
 
             app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Modbus TCP Gateway API V1");
-            });
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ModbusTCP v1"));
 
             app.UseEndpoints(endpoints =>
             {

@@ -45,19 +45,13 @@ namespace ModbusTCP.Controllers
         /// Initializes a new instance of the <see cref="CoilsController"/> class.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public CoilsController(ITcpModbusClient client,
-                               AppSettings settings,
-                               IConfiguration config,
-                               IHostEnvironment environment,
-                               IHostApplicationLifetime lifetime,
-                               ILogger<CoilsController> logger)
-            : base(client, settings, config, environment, lifetime, logger)
-        { }
+        public CoilsController(ITcpModbusClient client, IConfiguration configuration, ILogger<CoilController> logger)
+            : base(client, configuration, logger)
+        {
+            _logger.LogDebug("CoilsController()");
+        }
 
         #endregion
 

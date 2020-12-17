@@ -113,13 +113,11 @@ namespace ModbusLib
                     }
                 }
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception)
             {
                 _client?.Dispose();
                 _client = null;
             }
-#pragma warning restore CA1031 // Do not catch general exception types
 
             ModbusMaster = NullMaster.CreateModbusMaster();
             return false;

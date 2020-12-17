@@ -42,19 +42,13 @@ namespace ModbusRTU.Controllers
         /// Initializes a new instance of the <see cref="DiscreteInputController"/> class.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public DiscreteInputController(IRtuModbusClient client,
-                                       AppSettings settings,
-                                       IConfiguration config,
-                                       IHostEnvironment environment,
-                                       IHostApplicationLifetime lifetime,
-                                       ILogger<DiscreteInputController> logger)
-            : base(client, settings, config, environment, lifetime, logger)
-        { }
+        public DiscreteInputController(IRtuModbusClient client, IConfiguration configuration, ILogger<CoilController> logger)
+            : base(client, configuration, logger)
+        {
+            _logger.LogDebug("DiscreteInputController()");
+        }
 
         #endregion
 

@@ -25,9 +25,10 @@ namespace ModbusRTU.Controllers
 
     using NModbus.Extensions;
 
-    using UtilityLib;
     using ModbusLib;
     using ModbusRTU.Models;
+
+    using UtilityLib.Webapp;
 
     #endregion
 
@@ -133,9 +134,14 @@ namespace ModbusRTU.Controllers
     /// <summary>
     /// Baseclass for all Modbus Gateway MVC Controller reading and writing data.
     /// </summary>
-    public class ModbusController : BaseController<AppSettings>
+    public class ModbusController : BaseController
     {
         #region Protected Fields
+
+        /// <summary>
+        /// The application settings.
+        /// </summary>
+        protected readonly AppSettings _settings = new AppSettings();
 
         /// <summary>
         /// The Modbus RTU client instance.
@@ -146,7 +152,7 @@ namespace ModbusRTU.Controllers
         /// Instantiate a Singleton of the Semaphore with a value of 1.
         /// This means that only 1 thread can be granted access at a time.
         /// </summary>
-        static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        protected static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         #endregion Private Fields
 
@@ -156,20 +162,16 @@ namespace ModbusRTU.Controllers
         /// Initializes a new instance of the <see cref="ModbusController"/> class.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public ModbusController(IRtuModbusClient client,
-                                AppSettings settings,
-                                IConfiguration config,
-                                IHostEnvironment environment,
-                                IHostApplicationLifetime lifetime,
-                                ILogger<ModbusController> logger)
-            : base(settings, config, environment, lifetime, logger)
+        public ModbusController(IRtuModbusClient client, IConfiguration configuration, ILogger<ModbusController> logger)
+            : base(configuration, logger)
         {
+            _logger.LogDebug("ModbusController()");
+
             _client = client;
+
+            configuration.GetSection("AppSettings").Bind(_settings);
         }
 
         #endregion
@@ -230,7 +232,7 @@ namespace ModbusRTU.Controllers
 
             try
             {
-                if (request is null) throw new ArgumentNullException("request");
+                if (request is null) throw new ArgumentNullException(nameof(request));
 
                 await _semaphore.WaitAsync();
 
@@ -659,8 +661,8 @@ namespace ModbusRTU.Controllers
 
             try
             {
-                if (request is null) throw new ArgumentNullException("request");
-                if (data is null) throw new ArgumentNullException("data");
+                if (request is null) throw new ArgumentNullException(nameof(request));
+                if (data is null) throw new ArgumentNullException(nameof(data));
 
                 await _semaphore.WaitAsync();
 
@@ -972,8 +974,8 @@ namespace ModbusRTU.Controllers
 
             try
             {
-                if (request is null) throw new ArgumentNullException("request");
-                if (data is null) throw new ArgumentNullException("data");
+                if (request is null) throw new ArgumentNullException(nameof(request));
+                if (data is null) throw new ArgumentNullException(nameof(data));
                 if (data.Length == 0) throw new ArgumentException("Length of data array is zero");
 
                 await _semaphore.WaitAsync();

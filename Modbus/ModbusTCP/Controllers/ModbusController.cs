@@ -21,14 +21,14 @@ namespace ModbusTCP.Controllers
 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
     using NModbus.Extensions;
 
-    using UtilityLib;
     using ModbusLib;
     using ModbusTCP.Models;
+
+    using UtilityLib.Webapp;
 
     #endregion
 
@@ -134,9 +134,14 @@ namespace ModbusTCP.Controllers
     /// <summary>
     /// Baseclass for all Modbus Gateway MVC Controller reading and writing data.
     /// </summary>
-    public class ModbusController : BaseController<AppSettings>
+    public class ModbusController : BaseController
     {
         #region Protected Fields
+
+        /// <summary>
+        /// The application settings.
+        /// </summary>
+        private readonly AppSettings _settings = new AppSettings();
 
         /// <summary>
         /// The Modbus TCP client instance.
@@ -147,7 +152,7 @@ namespace ModbusTCP.Controllers
         /// Instantiate a Singleton of the Semaphore with a value of 1.
         /// This means that only 1 thread can be granted access at a time.
         /// </summary>
-        static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        protected static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         #endregion Private Fields
 
@@ -157,20 +162,16 @@ namespace ModbusTCP.Controllers
         /// Initializes a new instance of the <see cref="ModbusController"/> class.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public ModbusController(ITcpModbusClient client, 
-                                AppSettings settings,
-                                IConfiguration config,
-                                IHostEnvironment environment,
-                                IHostApplicationLifetime lifetime,
-                                ILogger<ModbusController> logger)
-            : base(settings, config, environment, lifetime, logger)
+        public ModbusController(ITcpModbusClient client, IConfiguration configuration, ILogger<ModbusController> logger)
+            : base(configuration, logger)
         {
+            _logger.LogDebug("ModbusController()");
+
             _client = client;
+
+            configuration.GetSection("AppSettings").Bind(_settings);
         }
 
         #endregion

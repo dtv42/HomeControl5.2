@@ -28,7 +28,6 @@ namespace ModbusTest
     using UtilityLib;
 
     #endregion
-
     public class TestModbusTCP : IClassFixture<WebApplicationFactory<ModbusTCP.Startup>>
     {
         private readonly WebApplicationFactory<ModbusTCP.Startup> _factory;
@@ -352,7 +351,7 @@ namespace ModbusTest
             Assert.False(settings.TcpMaster.ExclusiveAddressUse);
             Assert.Equal(1000, settings.TcpMaster.ReceiveTimeout);
             Assert.Equal(1000, settings.TcpMaster.SendTimeout);
-            Assert.Equal("10.0.1.77", settings.TcpSlave.Address);
+            Assert.Equal("10.0.1.129", settings.TcpSlave.Address);
             Assert.Equal(502, settings.TcpSlave.Port);
             Assert.Equal(1, (int)settings.TcpSlave.ID);
         }

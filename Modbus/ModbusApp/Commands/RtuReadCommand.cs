@@ -92,43 +92,6 @@ namespace ModbusApp.Commands
                 // Run additional checks on options.
                 options.CheckOptions(console);
 
-                if (options.Coil || options.Discrete)
-                {
-                    if ((options.Number < 1) || (options.Number > IModbusClient.MaxBooleanPoints))
-                    {
-                        throw new ArgumentOutOfRangeException($"Number {options.Number} is out of the range of valid values (1..{IModbusClient.MaxBooleanPoints}).");
-                    }
-                }
-
-                if (options.Holding || options.Input)
-                {
-                    if (!string.IsNullOrEmpty(options.Type))
-                    {
-                        bool ok = options.Type switch
-                        {
-                            "bits"   => (options.Number > 1) ? throw new ArgumentOutOfRangeException("Only a single bit array value is supported.") : true,
-                            "string" => ((options.Number < 1) || ((options.Number + 1) / 2 > IModbusClient.MaxRegisterPoints)) ? throw new ArgumentOutOfRangeException($"Reading string values: options.Number {options.Number} is out of the range (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "byte"   => ((options.Number < 1) || ((options.Number + 1) / 2 > IModbusClient.MaxRegisterPoints)) ? throw new ArgumentOutOfRangeException($"Reading byte values:   options.Number {options.Number} is out of the range (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "short"  => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints)) ? throw new ArgumentOutOfRangeException($"Reading short values:  options.Number {options.Number} is out of the range (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "ushort" => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints)) ? throw new ArgumentOutOfRangeException($"Reading ushort values: options.Number {options.Number} is out of the range (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "int"    => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints / 2)) ? throw new ArgumentOutOfRangeException($"Reading int values:    options.Number {options.Number} is out of the range of (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "uint"   => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints / 2)) ? throw new ArgumentOutOfRangeException($"Reading uint values:   options.Number {options.Number} is out of the range of (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "float"  => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints / 2)) ? throw new ArgumentOutOfRangeException($"Reading float values:  options.Number {options.Number} is out of the range of (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "double" => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints / 4)) ? throw new ArgumentOutOfRangeException($"Reading double values: options.Number {options.Number} is out of the range of (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "long"   => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints / 4)) ? throw new ArgumentOutOfRangeException($"Reading long values:   options.Number {options.Number} is out of the range of (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            "ulong"  => ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints / 4)) ? throw new ArgumentOutOfRangeException($"Reading ulong values:  options.Number {options.Number} is out of the range of (max. {IModbusClient.MaxRegisterPoints} registers).") : true,
-                            _ => throw new ArgumentOutOfRangeException($"Unknown type '{options.Type}' (should not happen).")
-                        };
-                    }
-                    else
-                    {
-                        if ((options.Number < 1) || (options.Number > IModbusClient.MaxRegisterPoints))
-                        {
-                            throw new ArgumentOutOfRangeException($"Number {options.Number} is out of the range of valid values (1..{IModbusClient.MaxBooleanPoints}).");
-                        }
-                    }
-                }
-
                 // Using RTU client options.
                 client.RtuMaster.SerialPort   = options.RtuMaster.SerialPort;
                 client.RtuMaster.Baudrate     = options.RtuMaster.Baudrate;

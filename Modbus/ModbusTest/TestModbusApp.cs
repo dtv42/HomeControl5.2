@@ -52,7 +52,7 @@ namespace ModbusTest
             proc.StartInfo.RedirectStandardError = true;
 
             // set working directory
-            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl5.2\Modbus\ModbusApp\";
+            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl.5.2\Modbus\ModbusApp\";
 
             // start and wait for exit
             proc.Start();

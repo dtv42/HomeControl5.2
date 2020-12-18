@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "EM300LRApp": {
+      "commandName": "Project",
+      "commandLineArgs": "read",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

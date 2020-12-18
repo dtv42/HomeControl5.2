@@ -40,7 +40,7 @@ namespace UtilityTest
             proc.StartInfo.RedirectStandardError = true;
 
             // set working directory
-            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl5.2\Utilities\UtilityApp\";
+            proc.StartInfo.WorkingDirectory = @"D:\Development\source\repos\HomeControl.5.2\Utilities\UtilityApp\";
 
             // start and wait for exit
             proc.Start();

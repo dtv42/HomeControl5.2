@@ -13,8 +13,8 @@ namespace UtilityLib.Console
     #region Using Directives
 
     using System;
-    using System.CommandLine;
     using System.Diagnostics.CodeAnalysis;
+
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
 

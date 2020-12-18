@@ -10,11 +10,19 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityWeb.Models
 {
+    #region Using Directives
+
+    using UtilityLib.Webapp;
+
+    #endregion Using Directives
+
     /// <summary>
     /// Application specific settings using data settings.
     /// </summary>
     public sealed class AppSettings
     {
         public SettingsData Data { get; set; } = new SettingsData();
+        public GatewaySettings GatewaySettings { get; set; } = new GatewaySettings();
+        public PingHealthCheckOptions PingOptions { get; set; } = new PingHealthCheckOptions();
     }
 }

@@ -14,9 +14,11 @@ namespace UtilityWeb
 
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
-
+    using Microsoft.Extensions.Logging;
     using Serilog;
+    using Serilog.Extensions.Logging;
 
     #endregion Using Directives
 
@@ -45,6 +47,7 @@ namespace UtilityWeb
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder
+                        .CaptureStartupErrors(true)
                         .ConfigureAppConfiguration((context, config) =>
                         {
                             config.AddJsonFile("testdata.json", optional: false, reloadOnChange: false);

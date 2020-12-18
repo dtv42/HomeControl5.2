@@ -38,8 +38,8 @@ namespace UtilityLib.Webapp
         /// <summary>
         ///  Initializes a new instance of the <see cref="BaseController"/> class.
         /// </summary>
-        /// <param name="configuration"></param>
-        /// <param name="logger"></param>
+        /// <param name="configuration">The configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
         public BaseController(IConfiguration configuration, ILogger<BaseController> logger)
         {
             _configuration = configuration;

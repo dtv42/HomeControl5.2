@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>8.0</LangVersion>
+    <Version>1.0.0</Version>
+    <Authors>Dr. Peter Trimmel</Authors>
+    <Company />
+    <Description>Fronius library.</Description>
+    <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Utilities\UtilityLib\UtilityLib.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -18,6 +18,7 @@ namespace UtilityLib.Webapp
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Diagnostics.HealthChecks;
+    using Microsoft.Extensions.Logging;
 
     #endregion Using Directives
 
@@ -28,9 +29,7 @@ namespace UtilityLib.Webapp
     {
         #region Private Data Members
 
-        private readonly string _host;
-        private readonly int _timeout;
-        private readonly int _pingInterval;
+        private readonly IPingHealthCheckOptions _options;
         private DateTime _lastPingTime = DateTime.MinValue;
         private HealthCheckResult _lastPingResult = HealthCheckResult.Healthy();
 
@@ -41,14 +40,10 @@ namespace UtilityLib.Webapp
         /// <summary>
         /// Initializes a new instance of the <see cref="PingHealthCheck"/> class.
         /// </summary>
-        /// <param name="host">The ping host.</param>
-        /// <param name="timeout">The ping timeout (msec).</param>
-        /// <param name="pingInterval">The ping interval (sec).</param>
-        public PingHealthCheck(string host, int timeout, int pingInterval = 0)
+        /// <param name="options">The ping options.</param>
+        public PingHealthCheck(IPingHealthCheckOptions options)
         {
-            _host = host;
-            _timeout = timeout;
-            _pingInterval = pingInterval;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         #endregion
@@ -61,34 +56,40 @@ namespace UtilityLib.Webapp
         /// <returns>A HealthCheckResult object.</returns>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
-            if (_pingInterval != 0 && _lastPingTime.AddSeconds(_pingInterval) > DateTime.Now)
-            {
-                return _lastPingResult;
-            }
-
             try
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new HealthCheckResult(context.Registration.FailureStatus, description: $"{nameof(PingHealthCheck)} execution is cancelled.");
+                }
+
+                if (_options.Interval != 0 && _lastPingTime.AddSeconds(_options.Interval) > DateTime.Now)
+                {
+                    return _lastPingResult;
+                }
+
                 using var ping = new Ping();
                 _lastPingTime = DateTime.Now;
 
-                var reply = await ping.SendPingAsync(_host, _timeout);
+                var reply = await ping.SendPingAsync(_options.Address, _options.Timeout);
 
                 if (reply.Status != IPStatus.Success)
                 {
-                    _lastPingResult = HealthCheckResult.Unhealthy();
+                    _lastPingResult = HealthCheckResult.Unhealthy(description: $"Ping to address #{_options.Address} is not successful.");
+
                 }
-                else if (reply.RoundtripTime >= _timeout)
+                else if (reply.RoundtripTime >= _options.Timeout)
                 {
-                    _lastPingResult = HealthCheckResult.Degraded();
+                    _lastPingResult = HealthCheckResult.Degraded(description: $"Ping to address #{_options.Address} exceeded timeout.");
                 }
                 else
                 {
                     _lastPingResult = HealthCheckResult.Healthy();
                 }
             }
-            catch
+            catch(Exception ex)
             {
-                _lastPingResult = HealthCheckResult.Unhealthy();
+                _lastPingResult = new HealthCheckResult(context.Registration.FailureStatus, exception: ex);
             }
 
             return _lastPingResult;

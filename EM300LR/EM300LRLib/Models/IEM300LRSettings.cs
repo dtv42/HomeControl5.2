@@ -10,7 +10,7 @@ namespace EM300LRLib.Models
 {
     #region Using Directives
 
-    using UtilityLib;
+    using UtilityLib.Webapp;
 
     #endregion Using Directives
 
@@ -19,8 +19,14 @@ namespace EM300LRLib.Models
     /// </summary>
     public interface IEM300LRSettings : IHttpClientSettings
     {
+        /// <summary>
+        /// Login password for the EM300LR web service.
+        /// </summary>
         string Password { get; set; }
 
+        /// <summary>
+        /// Serial number of the EM300LR device used in login.
+        /// </summary>
         string SerialNumber { get; set; }
     }
 }

@@ -55,6 +55,23 @@ namespace ModbusTest
         }
 
         [Theory]
+        [InlineData("/healthchecks")]
+        [InlineData("/healthchecks-ui")]
+        [InlineData("/health-process")]
+        [InlineData("/health-gateway")]
+        public async Task TestHealthCheckEndpoints(string url)
+        {
+            // Arrange
+            var client = _factory.CreateClient();
+
+            // Act
+            var response = await client.GetAsync(url);
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+        }
+
+        [Theory]
         [InlineData("/coil/0")]
         [InlineData("/coils/0")]
         [InlineData("/discreteinput/0")]

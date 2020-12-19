@@ -13,6 +13,7 @@ namespace ModbusTCP
     #region Using Directives
 
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;
 
     using Microsoft.Extensions.Configuration;
@@ -20,11 +21,16 @@ namespace ModbusTCP
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
+    using HealthChecks.UI.Client;
+    using Serilog;
+
+    using UtilityLib;
+
     using ModbusLib;
     using ModbusLib.Models;
     using ModbusTCP.Models;
 
-    using UtilityLib;
+    using ModbusTCP.Services;
 
     #endregion Using Directives
 
@@ -34,19 +40,18 @@ namespace ModbusTCP
     public class Startup
     {
         /// <summary>
-        ///  Initializes the configuration property.
+        /// The application configuration.
         /// </summary>
-        /// <param name="configuration"></param>
+        private readonly IConfiguration _configuration;
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="Startup"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration instance.</param>
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
-
-        #region Public Properties
-
-        public IConfiguration Configuration { get; }
-
-        #endregion Public Properties
 
         /// <summary>
         ///  This method gets called by the runtime. This method adds services to the container.
@@ -54,10 +59,32 @@ namespace ModbusTCP
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
+            // Get application settings.
+            var settings = _configuration.GetSection("AppSettings").Get<AppSettings>();
+
+            // Configure health checks.
+            services
+                .AddHealthChecks()
+                    .AddProcessAllocatedMemoryHealthCheck(maximumMegabytesAllocated: 100, tags: new[] { "process", "memory" })
+                    .AddCheck<TcpHealthCheck>("gateway", tags: new[] { "gateway" })
+                ;
+
+            // Adding healthchecks UI configuring endpoints.
+            services
+                .AddHealthChecksUI(settings =>
+                {
+                    settings.SetHeaderText("ModbusTCP - Health Checks Status");
+                    settings.AddHealthCheckEndpoint("Process", "/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                })
+                .AddInMemoryStorage()
+                ;
+
+            // Setup the default Json serialization options.
             services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions());
 
             // Add a singleton service using the application settings implementing ITcpClientSettings.
-            services.AddSingleton((ITcpClientSettings)Configuration.GetSection("AppSettings").Get<AppSettings>());
+            services.AddSingleton((ITcpClientSettings)settings);
             services.AddSingleton<ITcpModbusClient, TcpModbusClient>();
 
             services.AddSwaggerGen(c =>
@@ -78,15 +105,40 @@ namespace ModbusTCP
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseRouting();
+            app.UseStaticFiles();
 
-            app.UseAuthorization();
+            app.UseHealthChecks("/healthchecks");
+
+            app.UseSerilogRequestLogging();
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ModbusTCP v1"));
 
+            app.UseRouting();
+
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
+                // adding endpoint of health check for the health check ui in UI format
+                endpoints.MapHealthChecks("/health-gateway", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("gateway"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                endpoints.MapHealthChecks("/health-process", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("process"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                // map healthcheck ui endpoint (/healthchecks-ui) and use custom style sheet.
+                endpoints.MapHealthChecksUI(setup =>
+                {
+                    setup.AddCustomStylesheet("wwwroot/css/HealthCheck.css");
+                });
+
                 endpoints.MapControllers();
             });
         }

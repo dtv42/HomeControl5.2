@@ -1,12 +1,14 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="EM300LRSettings.cs" company="DTV-Online">
-//   Copyright(c) 2019 Dr. Peter Trimmel. All rights reserved.
+// <copyright file="GlobalOptions.cs" company="DTV-Online">
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>10-12-2020 16:19</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
-namespace EM300LRLib.Models
+namespace EM300LRApp.Options
 {
     #region Using Directives
 
@@ -14,16 +16,18 @@ namespace EM300LRLib.Models
     using System.ComponentModel.DataAnnotations;
 
     using UtilityLib;
+    using UtilityLib.Console;
+
+    using EM300LRLib.Models;
 
     #endregion Using Directives
 
     /// <summary>
-    /// Class holding all EM300LR settings (password, and serial number).
+    /// The application global options. The default global options are inherited from <see cref="BaseOptions"/>.
+    /// Note that secret options like the Password option is typically set using the ASP.NET Core Secret Manager. 
     /// </summary>
-    public class EM300LRSettings : IEM300LRSettings
+    public class GlobalOptions : BaseOptions, IEM300LRSettings
     {
-        #region Public Properties
-
         /// <summary>
         /// The Http client base address.
         /// </summary>
@@ -45,7 +49,5 @@ namespace EM300LRLib.Models
         /// Serial number of the EM300LR device used in login.
         /// </summary>
         public string SerialNumber { get; set; } = string.Empty;
-
-        #endregion
     }
 }

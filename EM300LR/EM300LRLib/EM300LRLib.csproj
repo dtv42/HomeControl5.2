@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Utilities\UtilityLib\UtilityLib.csproj" />
+    <ProjectReference Include="..\..\Utilities\UtilityLib.Webapp\UtilityLib.Webapp.csproj" />
   </ItemGroup>
 
 </Project>

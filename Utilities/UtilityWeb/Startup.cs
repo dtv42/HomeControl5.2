@@ -10,8 +10,9 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace UtilityWeb
 {
-    using HealthChecks.UI.Client;
     #region Using Directives
+
+    using System;
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -22,8 +23,9 @@ namespace UtilityWeb
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
+    using HealthChecks.UI.Client;
     using Serilog;
-    using System;
+
     using UtilityLib;
     using UtilityLib.Webapp;
 
@@ -83,7 +85,7 @@ namespace UtilityWeb
                     .AddCheck<PingHealthCheck>   ("gateway2", tags: new[] { "gateway" })
                 ;
 
-            //adding healthchecks UI configuring endpoints.
+            // Adding healthchecks UI configuring endpoints.
             services
                 .AddHealthChecksUI(settings =>
                 {
@@ -120,8 +122,6 @@ namespace UtilityWeb
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UtilityWeb v1"));
             }
 
             app.UseStaticFiles();
@@ -129,6 +129,9 @@ namespace UtilityWeb
             app.UseHealthChecks("/healthchecks");
 
             app.UseSerilogRequestLogging();
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UtilityWeb v1"));
 
             app.UseRouting();
             
@@ -160,6 +163,7 @@ namespace UtilityWeb
                 {
                     setup.AddCustomStylesheet("wwwroot/css/HealthCheck.css");
                 });
+
                 endpoints.MapControllers();
             });
         }

@@ -18,6 +18,8 @@ namespace EM300LRLib
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using EM300LRLib.Models;
 
     #endregion Using Directives
@@ -27,7 +29,7 @@ namespace EM300LRLib
     /// The data properties are based on the specification EM300LR
     /// Technische Dokumentation TQ Energy Manager JSON-API.0104 (27.10.2017)
     /// </summary>
-    public class EM300LRGateway : BaseGateway<EM300LRSettings>
+    public class EM300LRGateway : BaseGateway
     {
         #region Private Data Members
 
@@ -37,15 +39,14 @@ namespace EM300LRLib
         private readonly EM300LRClient _client;
 
         /// <summary>
+        /// The EM300LR client settings.
+        /// </summary>
+        private readonly EM300LRSettings _settings;
+
+        /// <summary>
         /// The custom JSON serializer options.
         /// </summary>
-        private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
-        {
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            IgnoreNullValues = true,
-            WriteIndented = true
-        };
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion Private Data Members
 
@@ -54,7 +55,7 @@ namespace EM300LRLib
         /// <summary>
         /// Gets the EM300LR settings.
         /// </summary>
-        public EM300LRSettings Settings { get => _settings; }
+        public IEM300LRSettings Settings { get => _settings; }
 
         /// <summary>
         /// Indicates startup completed.
@@ -100,16 +101,17 @@ namespace EM300LRLib
         /// Note that the serializer options include a custom converter. 
         /// </summary>
         /// <param name="client">The custom HTTP client.</param>
+        /// <param name="settings">The EM300LR settings.</param>
         /// <param name="logger">The application logger instance.</param>
-        /// <param name="options">The settings options.</param>
         public EM300LRGateway(EM300LRClient client,
                               EM300LRSettings settings,
                               ILogger<EM300LRGateway> logger)
-            : base(settings, logger)
+            : base(logger)
         {
             _logger?.LogDebug($"EM300LRGateway()");
 
             _serializerOptions.Converters.Add(new NumberConverter());
+            _settings = settings;
             _client = client;
         }
 
@@ -224,7 +226,7 @@ namespace EM300LRLib
             if (IsStartupOk)
             {
                 _logger.LogInformation("b-control EM300LR Gateway:");
-                _logger.LogInformation($"    Base Address:  {_settings.BaseAddress}");
+                _logger.LogInformation($"    Base Address:  {_settings.Address}");
                 _logger.LogInformation($"    Password:      {_settings.Password}");
                 _logger.LogInformation($"    Serial Number: {_settings.SerialNumber}");
                 _logger.LogInformation($"Startup OK");
@@ -242,13 +244,14 @@ namespace EM300LRLib
         /// </summary>
         /// <returns>Flag indicating success or failure.</returns>
         public override bool CheckAccess()
-            => (GetStartAsync().Result == DataStatus.Good);
+            => GetStartAsync().Result == DataStatus.Good;
 
         /// <summary>
-        /// Updates the client using the EM300LRSettings instance.
+        /// Tries to connect to the b-Control EM300LR web service asnychronously.
         /// </summary>
-        public void UpdateClient()
-            => _client.Update();
+        /// <returns>Flag indicating success or failure.</returns>
+        public override async Task<bool> CheckAccessAsync()
+            => (await GetStartAsync()) == DataStatus.Good;
 
         #endregion Public Methods
 

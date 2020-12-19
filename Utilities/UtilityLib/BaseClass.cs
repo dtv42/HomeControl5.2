@@ -44,4 +44,35 @@ namespace UtilityLib
 
         #endregion Constructors
     }
+
+    /// <summary>
+    /// Base class providing a logger data and settings member.
+    /// </summary>
+    /// <typeparam name="TSettings">The settings class.</typeparam>
+    public class BaseClass<TSettings> : BaseClass where TSettings : class, new()
+    {
+        #region Protected Data Members
+
+        /// <summary>
+        /// The settings instance.
+        /// </summary>
+        protected readonly TSettings _settings;
+
+        #endregion Protected Data Members
+
+        #region Constructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BaseClass"/> class.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
+        /// <param name="settings">The setting instance.</param>
+        public BaseClass(TSettings settings, ILogger<BaseClass> logger) : base(logger)
+        {
+            _settings = settings;
+            _logger?.LogDebug($"BaseClass<{typeof(TSettings).Name}>()");
+        }
+
+        #endregion Constructors
+    }
 }

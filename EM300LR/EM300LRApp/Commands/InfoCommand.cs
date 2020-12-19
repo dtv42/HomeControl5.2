@@ -14,83 +14,141 @@ namespace EM300LRApp.Commands
 
     using System;
     using System.Collections.Generic;
+    using System.CommandLine;
+    using System.CommandLine.Parsing;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
-    using EM300LRLib;
+    using UtilityLib.Console;
+
     using EM300LRLib.Models;
-    using EM300LRApp.Models;
+    using EM300LRApp.Options;
 
     #endregion Using Directives
 
     /// <summary>
     /// Application command "info". Note that a gateway instance is not needed here.
     /// </summary>
-    [Command(Name = "info",
-             FullName = "EM300LR Info Command",
-             Description = "Reading data values from b-Control EM300LR energy manager.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class InfoCommand : BaseCommand<InfoCommand, AppSettings>
+    public sealed class InfoCommand : BaseCommand
     {
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion Private Properties
-
-        #region Public Properties
-
-        [Option("-d|--data", Description = "Gets all data.")]
-        public bool Data { get; }
-
-        [Option("-t|--total", Description = "Get the total data.")]
-        public bool Total { get; }
-
-        [Option("-1|--phase1", Description = "Get the phase 1 data.")]
-        public bool Phase1 { get; }
-
-        [Option("-2|--phase2", Description = "Get the phase 2 data.")]
-        public bool Phase2 { get; }
-
-        [Option("-3|--phase3", Description = "Get the phase 3 data.")]
-        public bool Phase3 { get; }
-
-        [Argument(0, Description = "Specify the named property.")]
-        public string Property { get; } = string.Empty;
-
-        #endregion Public Properties
-
         #region Constructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InfoCommand"/> class.
+        ///  Initializes a new instance of the <see cref="InfoCommand"/> class.
         /// </summary>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public InfoCommand(IConsole console,
-                           AppSettings settings,
-                           IConfiguration config,
-                           IHostEnvironment environment,
-                           IHostApplicationLifetime lifetime,
-                           ILogger<InfoCommand> logger,
-                           CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public InfoCommand(ILogger<InfoCommand> logger)
+            : base(logger, "info", "Reading data values from b-Control EM300LR energy manager.")
         {
-            _logger?.LogDebug("InfoCommand()");
+            logger.LogDebug("InfoCommand()");
+
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
+
+            AddOption(new Option<bool>(new string[] { "-d", "--data"   }, "Gets all data"        ));
+            AddOption(new Option<bool>(new string[] { "-t", "--total"  }, "Gets the total data"  ));
+            AddOption(new Option<bool>(new string[] { "-1", "--phase1" }, "Gets the phase 1 data"));
+            AddOption(new Option<bool>(new string[] { "-2", "--phase2" }, "Gets the phase 2 data"));
+            AddOption(new Option<bool>(new string[] { "-3", "--phase3" }, "Gets the phase 3 data"));
+
+            // Add custom validation.
+            AddValidator(r =>
+            {
+                if (string.IsNullOrEmpty(r.GetArgumentValueOrDefault<string>("name")) &&
+                    !r.Children.Contains("-d") && !r.Children.Contains("-t") &&
+                    !r.Children.Contains("-1") && !r.Children.Contains("-2") && !r.Children.Contains("-3"))
+                {
+                    return "Please select at least a property type (-d|-t|-1|-2|-3) or specify a property name.";
+                }
+
+                return null;
+            });
+
+
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, InfoOptions>
+                ((console, globals, options) =>
+            {
+                logger.LogDebug("Handler()");
+
+                options.CheckOptions();
+
+                if (globals.Verbose)
+                {
+                    console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                    console.Out.WriteLine($"Password:      {globals.Password}");
+                    console.Out.WriteLine($"Serialnumber:  {globals.SerialNumber}");
+                    console.Out.WriteLine($"Address:       {globals.Address}");
+                    console.Out.WriteLine($"Timeout:       {globals.Timeout}");
+                    console.Out.WriteLine();
+                }
+
+                if (string.IsNullOrEmpty(options.Name))
+                {
+                    if (options.Data)
+                    {
+                        console.Out.WriteLine($"Data:");
+                        ShowProperties(console, typeof(EM300LRData));
+                    }
+
+                    if (options.Total)
+                    {
+                        console.Out.WriteLine($"Total:");
+                        ShowProperties(console, typeof(TotalData));
+                    }
+
+                    if (options.Phase1)
+                    {
+                        console.Out.WriteLine($"Phase1:");
+                        ShowProperties(console, typeof(Phase1Data));
+                    }
+
+                    if (options.Phase2)
+                    {
+                        console.Out.WriteLine($"Phase2:");
+                        ShowProperties(console, typeof(Phase2Data));
+                    }
+
+                    if (options.Phase3)
+                    {
+                        console.Out.WriteLine($"Phase3:");
+                        ShowProperties(console, typeof(Phase3Data));
+                    }
+                }
+                else
+                {
+                    if (options.Data)
+                    {
+                        ShowProperty(console, typeof(EM300LRData), options.Name);
+                    }
+
+                    if (options.Total)
+                    {
+                        ShowProperty(console, typeof(TotalData), options.Name);
+                    }
+
+                    if (options.Phase1)
+                    {
+                        ShowProperty(console, typeof(Phase1Data), options.Name);
+                    }
+
+                    if (options.Phase2)
+                    {
+                        ShowProperty(console, typeof(Phase2Data), options.Name);
+                    }
+
+                    if (options.Phase3)
+                    {
+                        ShowProperty(console, typeof(Phase3Data), options.Name);
+                    }
+                }
+
+                return (int)ExitCodes.SuccessfullyCompleted;
+            });
         }
 
         #endregion Constructors
@@ -98,179 +156,20 @@ namespace EM300LRApp.Commands
         #region Private Methods
 
         /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        private int OnExecute()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        _console.WriteLine($"Data:");
-                        ShowProperties(typeof(EM300LRData));
-                    }
-                    
-                    if (Total)
-                    {
-                        _console.WriteLine($"Total:");
-                        ShowProperties(typeof(TotalData));
-                    }
-                    
-                    if (Phase1)
-                    {
-                        _console.WriteLine($"Phase1:");
-                        ShowProperties(typeof(Phase1Data));
-                    }
-                    
-                    if (Phase2)
-                    {
-                        _console.WriteLine($"Phase2:");
-                        ShowProperties(typeof(Phase2Data));
-                    }
-                    
-                    if (Phase3)
-                    {
-                        _console.WriteLine($"Phase3:");
-                        ShowProperties(typeof(Phase3Data));
-                    }
-                }
-                else
-                {
-                    if (Data)
-                    {
-                        ShowProperty(typeof(EM300LRData), Property);
-                    }
-                    
-                    if (Total)
-                    {
-                        ShowProperty(typeof(TotalData), Property);
-                    }
-                    
-                    if (Phase1)
-                    {
-                        ShowProperty(typeof(Phase1Data), Property);
-                    }
-                    
-                    if (Phase2)
-                    {
-                        ShowProperty(typeof(Phase2Data), Property);
-                    }
-                    
-                    if (Phase3)
-                    {
-                        ShowProperty(typeof(Phase3Data), Property);
-                    }
-                }
-            }
-            catch
-            {
-                _logger.LogError("InfoCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
-        }
-
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Data) ++options;
-                if (Total) ++options;
-                if (Phase1) ++options;
-                if (Phase2) ++options;
-                if (Phase3) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        if (typeof(EM300LRData).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Total)
-                    {
-                        if (typeof(TotalData).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Phase1)
-                    {
-                        if (typeof(Phase1Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Phase2)
-                    {
-                        if (typeof(Phase2Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Phase3)
-                    {
-                        if (typeof(Phase3Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        #endregion Public Methods
-
-        #region Private Methods
-
-        /// <summary>
         /// Displays a list of property names.
         /// </summary>
         /// <param name="type"></param>
-        private void ShowProperties(Type type)
+        private static void ShowProperties(IConsole console, Type type)
         {
-            _console.WriteLine($"List of Properties:");
+            console.Out.WriteLine($"List of Properties:");
             var names = type.GetProperties().Select(p => p.Name);
 
             foreach (var name in names)
             {
-                _console.WriteLine($"    {name}");
+                console.Out.WriteLine($"    {name}");
             }
 
-            _console.WriteLine();
+            console.Out.WriteLine();
         }
 
         /// <summary>
@@ -278,31 +177,31 @@ namespace EM300LRApp.Commands
         /// </summary>
         /// <param name="type"></param>
         /// <param name="name"></param>
-        private void ShowProperty(Type type, string name)
+        private static void ShowProperty(IConsole console, Type type, string name)
         {
-            _console.WriteLine($"Property {name}:");
+            console.Out.WriteLine($"Property {name}:");
             var info = type.GetProperty(name);
             var pType = info?.PropertyType;
 
-            _console.WriteLine($"   IsProperty:    {!(info is null)}");
-            _console.WriteLine($"   CanRead:       {info?.CanRead}");
-            _console.WriteLine($"   CanWrite:      {info?.CanWrite}");
+            console.Out.WriteLine($"   IsProperty:    {!(info is null)}");
+            console.Out.WriteLine($"   CanRead:       {info?.CanRead}");
+            console.Out.WriteLine($"   CanWrite:      {info?.CanWrite}");
 
             if (info?.PropertyType.IsArray ?? false)
             {
-                _console.WriteLine($"   IsArray:       {pType?.IsArray}");
-                _console.WriteLine($"   ElementType:   {pType?.GetElementType()}");
+                console.Out.WriteLine($"   IsArray:       {pType?.IsArray}");
+                console.Out.WriteLine($"   ElementType:   {pType?.GetElementType()}");
             }
             else if ((pType?.IsGenericType ?? false) && (pType?.GetGenericTypeDefinition() == typeof(List<>)))
             {
-                _console.WriteLine($"   IsList:        List<ItempType>");
-                _console.WriteLine($"   ItemType:      {pType?.GetGenericArguments().Single()}");
+                console.Out.WriteLine($"   IsList:        List<ItempType>");
+                console.Out.WriteLine($"   ItemType:      {pType?.GetGenericArguments().Single()}");
             }
             else
             {
-                _console.WriteLine($"   PropertyType:  {pType?.Name}");
+                console.Out.WriteLine($"   PropertyType:  {pType?.Name}");
             }
-            _console.WriteLine();
+            console.Out.WriteLine();
         }
 
         #endregion

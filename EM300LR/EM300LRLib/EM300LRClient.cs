@@ -22,7 +22,7 @@ namespace EM300LRLib
 
     #endregion Using Directives
 
-    public class EM300LRClient : BaseClass<EM300LRSettings>
+    public class EM300LRClient : BaseClass
     {
         #region Private Data Members
 
@@ -40,30 +40,20 @@ namespace EM300LRLib
         /// </summary>
         /// <param name="client"></param>
         /// <param name="logger"></param>
-        /// <param name="options"></param>
         public EM300LRClient(HttpClient client,
-                             EM300LRSettings settings,
                              ILogger<EM300LRClient> logger)
-            : base(settings, logger)
+            : base(logger)
         {
             _logger?.LogDebug($"EM300LRClient()");
 
             _client = client;
             _client.DefaultRequestHeaders.Add("Accept", "application/json");
             _client.DefaultRequestHeaders.Add("User-Agent", "EM300LRClient");
-
-            Update();
         }
 
         #endregion Constructors
 
         #region Public Methods
-
-        public void Update()
-        {
-            _client.BaseAddress = new Uri(_settings.BaseAddress);
-            _client.Timeout = TimeSpan.FromSeconds(_settings.Timeout);
-        }
 
         /// <summary>
         /// Helper method to perform a GET request and return the response as a string.

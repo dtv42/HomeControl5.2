@@ -3,6 +3,7 @@
     #region Using Directives
 
     using System;
+    using System.CommandLine;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.DependencyInjection;
@@ -14,11 +15,10 @@
     using UtilityLib.Console;
 
     using ModbusLib;
+    using ModbusLib.Models;
 
     using ModbusApp.Commands;
     using ModbusApp.Options;
-    using System.CommandLine;
-    using ModbusLib.Models;
 
     #endregion Using Directives
 

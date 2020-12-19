@@ -10,8 +10,19 @@
 
     #endregion Using Directives
 
+    /// <summary>
+    /// Example of a simple custom health check.
+    /// </summary>
     public class RandomHealthCheck : IHealthCheck
     {
+        /// <summary>
+        /// Runs the health check returning a (random) health status.
+        /// </summary>
+        /// <param name="context">A context object associated with the current execution.</param>
+        /// <param name="cancellationToken"> A <see cref="CancellationToken"/> that can be used to cancel the health check.</param>
+        /// <returns>
+        /// A Task that completes when the health check has finished, yielding the status of the component being checked.
+        /// </returns>
         public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             if (DateTime.UtcNow.Minute % 2 == 0)

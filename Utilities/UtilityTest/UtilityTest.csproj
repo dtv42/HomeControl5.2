@@ -8,11 +8,15 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
+    <None Remove="HealthCheck.css" />
     <None Remove="testdata.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="HealthCheck.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="testdata.json">

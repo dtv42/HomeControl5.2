@@ -50,11 +50,13 @@ namespace UtilityLib.Webapp
         #region Public Methods
 
         /// <summary>
-        /// Runs the health check, returning the corresponding status of the gateway status.
+        /// Runs the health check returning the gateway health status.
         /// </summary>
         /// <param name="context">A context object associated with the current execution.</param>
-        /// <param name="cancellationToken">A cancellation token that can be used to cancel the health check.</param>
-        /// <returns>A HealthCheckResult object.</returns>
+        /// <param name="cancellationToken"> A <see cref="CancellationToken"/> that can be used to cancel the health check.</param>
+        /// <returns>
+        /// A Task that completes when the health check has finished, yielding the status of the gateway being checked.
+        /// </returns>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             try
@@ -63,34 +65,34 @@ namespace UtilityLib.Webapp
                 {
                     if (_gateway.Status.IsGood)
                     {
-                        return HealthCheckResult.Healthy("Gateway status is Good",
+                        return HealthCheckResult.Healthy($"Gateway status is Good: {_gateway.Status.Explanation}",
                             new Dictionary<string, object>() { { "Status", _gateway.Status } });
                     }
                     else if (_gateway.Status.IsUncertain)
                     {
-                        return HealthCheckResult.Degraded("Gateway status is Uncertain", null,
+                        return HealthCheckResult.Degraded($"Gateway status is Uncertain: {_gateway.Status.Explanation}", null,
                             new Dictionary<string, object>() { { "Status", _gateway.Status } });
                     }
                     else if (_gateway.Status.IsBad)
                     {
-                        return HealthCheckResult.Unhealthy("Gateway status is Bad", null,
+                        return HealthCheckResult.Unhealthy($"Gateway status is Bad: {_gateway.Status.Explanation}", null,
                             new Dictionary<string, object>() { { "Status", _gateway.Status } });
                     }
                     else
                     {
-                        return HealthCheckResult.Degraded("Gateway status unknown", null,
+                        return HealthCheckResult.Degraded($"Gateway status Unknown: {_gateway.Status.Explanation}", null,
                                 new Dictionary<string, object>() { { "Status", _gateway.Status } });
                     }
                 }
                 else
                 {
-                    return HealthCheckResult.Degraded("Gateway status check failed", null,
+                    return HealthCheckResult.Degraded($"Gateway status check failed - status: {_gateway.Status.Explanation}", null,
                             new Dictionary<string, object>() { { "Status", _gateway.Status } });
                 }
             }
             catch
             {
-                return HealthCheckResult.Unhealthy("Error in gateway status check", null,
+                return HealthCheckResult.Unhealthy($"Error in gateway status check - status:  {_gateway.Status.Explanation}", null,
                         new Dictionary<string, object>() { { "Status", _gateway.Status } });
             }
         }

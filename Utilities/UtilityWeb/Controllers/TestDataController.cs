@@ -31,13 +31,16 @@ namespace UtilityWeb.Controllers
     [Route("[controller]/[action]")]
     public class TestDataController : BaseController
     {
+        /// <summary>
+        /// The application configuration.
+        /// </summary>
         private TestData _testdata = new TestData();
 
         /// <summary>
         ///  Initializes a new instance of the <see cref="TestDataController"/> class.
         /// </summary>
-        /// <param name="configuration"></param>
-        /// <param name="logger"></param>
+        /// <param name="configuration">The application configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
         public TestDataController(IConfiguration configuration, ILogger<TestDataController> logger)
             : base(configuration, logger)
         {

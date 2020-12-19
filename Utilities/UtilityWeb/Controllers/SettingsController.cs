@@ -31,13 +31,16 @@ namespace UtilityWeb.Controllers
     [Route("[controller]/[action]")]
     public class SettingsController : BaseController
     {
+        /// <summary>
+        /// The application configuration.
+        /// </summary>
         private readonly AppSettings _settings = new AppSettings();
 
         /// <summary>
         ///  Initializes a new instance of the <see cref="SettingsController"/> class.
         /// </summary>
-        /// <param name="configuration"></param>
-        /// <param name="logger"></param>
+        /// <param name="configuration">The application configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
         public SettingsController(IConfiguration configuration, ILogger<SettingsController> logger)
              : base(configuration, logger)
         {

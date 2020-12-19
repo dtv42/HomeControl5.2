@@ -18,7 +18,6 @@ namespace UtilityLib.Webapp
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Diagnostics.HealthChecks;
-    using Microsoft.Extensions.Logging;
 
     #endregion Using Directives
 
@@ -49,11 +48,13 @@ namespace UtilityLib.Webapp
         #endregion
 
         /// <summary>
-        /// Runs the health check, returning the corresponding status of the ping command.
+        /// Runs the health check returning the ping health status.
         /// </summary>
         /// <param name="context">A context object associated with the current execution.</param>
-        /// <param name="cancellationToken">A cancellation token that can be used to cancel the health check.</param>
-        /// <returns>A HealthCheckResult object.</returns>
+        /// <param name="cancellationToken"> A <see cref="CancellationToken"/> that can be used to cancel the health check.</param>
+        /// <returns>
+        /// A Task that completes when the health check has finished, yielding the status of the ping being executed.
+        /// </returns>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             try
@@ -84,7 +85,7 @@ namespace UtilityLib.Webapp
                 }
                 else
                 {
-                    _lastPingResult = HealthCheckResult.Healthy();
+                    _lastPingResult = HealthCheckResult.Healthy(description: $"Ping to address #{_options.Address} completed in {reply.RoundtripTime} msec.");
                 }
             }
             catch(Exception ex)

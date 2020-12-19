@@ -13,22 +13,17 @@ namespace UtilityWeb
     using HealthChecks.UI.Client;
     #region Using Directives
 
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;
 
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Diagnostics.HealthChecks;
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
     using Serilog;
-
+    using System;
     using UtilityLib;
     using UtilityLib.Webapp;
 
@@ -39,24 +34,41 @@ namespace UtilityWeb
 
     public class Startup
     {
+        /// <summary>
+        /// The application configuration.
+        /// </summary>
         private readonly IConfiguration _configuration;
 
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="Startup"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration instance.</param>
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// This method gets called by the runtime. Use this method to add services to the container.
+        /// </summary>
+        /// <param name="services">The service collection.</param>
         public void ConfigureServices(IServiceCollection services)
         {
             // Get application settings.
             var settings = _configuration.GetSection("AppSettings").Get<AppSettings>();
+            var gateway = settings.GatewaySettings;
 
             services
-            // Add the gateway client.
-               .AddPollyHttpClient<WebGateway>("Gateway", settings.GatewaySettings)
+            // Add the named gateway Http client (supporting request error policies).
+               .AddPollyHttpClient("Gateway", gateway.Retries, gateway.Wait,
+                   client =>
+                   {
+                       client.BaseAddress = new Uri(gateway.Address);
+                       client.Timeout = TimeSpan.FromMilliseconds(gateway.Timeout);
+                   });
 
             // Add the gateway service.
+            services
                 .AddSingleton<IGateway, WebGateway>()
 
             // Add the ping settings.
@@ -71,14 +83,14 @@ namespace UtilityWeb
                     .AddCheck<PingHealthCheck>   ("gateway2", tags: new[] { "gateway" })
                 ;
 
-            //adding healthchecks UI
+            //adding healthchecks UI configuring endpoints.
             services
                 .AddHealthChecksUI(settings =>
                 {
                     settings.SetHeaderText("UtilityWeb - Health Checks Status");
-                    settings.AddHealthCheckEndpoint("endpoint1", "/health-random");
-                    settings.AddHealthCheckEndpoint("endpoint2", "/health-process");
-                    settings.AddHealthCheckEndpoint("endpoint3", "/health-gateway");
+                    settings.AddHealthCheckEndpoint("Random", "/health-random");
+                    settings.AddHealthCheckEndpoint("Process", "/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
                 })
                 .AddInMemoryStorage()
                 ;
@@ -96,7 +108,11 @@ namespace UtilityWeb
                 });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <summary>
+        /// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// </summary>
+        /// <param name="app">The application builder instance.</param>
+        /// <param name="env">The web hosting environment.</param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.ApplicationServices.GetService<IGateway>().Startup();
@@ -108,8 +124,9 @@ namespace UtilityWeb
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UtilityWeb v1"));
             }
 
-            //adding health check endpoint
-            app.UseHealthChecks("/healthcheck");
+            app.UseStaticFiles();
+
+            app.UseHealthChecks("/healthchecks");
 
             app.UseSerilogRequestLogging();
 
@@ -119,7 +136,7 @@ namespace UtilityWeb
 
             app.UseEndpoints(endpoints =>
             {
-                //adding endpoint of health check for the health check ui in UI format
+                // adding endpoint of health check for the health check ui in UI format
                 endpoints.MapHealthChecks("/health-gateway", new HealthCheckOptions
                 {
                     Predicate = r => r.Tags.Contains("gateway"),
@@ -138,10 +155,10 @@ namespace UtilityWeb
                     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                 });
 
-                //map healthcheck ui endpoing - default is /healthchecks-ui/
+                // map healthcheck ui endpoint (/healthchecks-ui) and use custom style sheet.
                 endpoints.MapHealthChecksUI(setup =>
                 {
-                    setup.AddCustomStylesheet("HealthCheck.css");
+                    setup.AddCustomStylesheet("wwwroot/css/HealthCheck.css");
                 });
                 endpoints.MapControllers();
             });

@@ -15,7 +15,6 @@ namespace EM300LRApp.Commands
     using System;
     using System.Collections.Generic;
     using System.CommandLine;
-    using System.CommandLine.Parsing;
     using System.CommandLine.Invocation;
     using System.CommandLine.IO;
     using System.Linq;
@@ -55,27 +54,13 @@ namespace EM300LRApp.Commands
             AddOption(new Option<bool>(new string[] { "-2", "--phase2" }, "Gets the phase 2 data"));
             AddOption(new Option<bool>(new string[] { "-3", "--phase3" }, "Gets the phase 3 data"));
 
-            // Add custom validation.
-            AddValidator(r =>
-            {
-                if (string.IsNullOrEmpty(r.GetArgumentValueOrDefault<string>("name")) &&
-                    !r.Children.Contains("-d") && !r.Children.Contains("-t") &&
-                    !r.Children.Contains("-1") && !r.Children.Contains("-2") && !r.Children.Contains("-3"))
-                {
-                    return "Please select at least a property type (-d|-t|-1|-2|-3) or specify a property name.";
-                }
-
-                return null;
-            });
-
-
             // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, GlobalOptions, InfoOptions>
                 ((console, globals, options) =>
             {
                 logger.LogDebug("Handler()");
 
-                options.CheckOptions();
+                if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
 
                 if (globals.Verbose)
                 {

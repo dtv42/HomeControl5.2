@@ -38,7 +38,7 @@ namespace EM300LRApp.Options
         /// The Http client timeout (msec).
         /// </summary>
         [Range(0, int.MaxValue)]
-        public int Timeout { get; set; } = 1000;
+        public int Timeout { get; set; } = 10000;
 
         /// <summary>
         /// Login password for the EM300LR web service.

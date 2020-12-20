@@ -54,7 +54,6 @@
                 description: "Global timeout option")
                 .Default(options.Timeout)
                 .Name("number")
-                .NotEmpty()
             );
 
             AddGlobalOption(new Option<string>(
@@ -62,7 +61,6 @@
                 description: "Global password option")
                 .Default(options.Password)
                 .Name("string")
-                .NotEmpty()
             );
 
             AddGlobalOption(new Option<string>(
@@ -70,7 +68,6 @@
                 description: "Global serial number option")
                 .Default(options.SerialNumber)
                 .Name("string")
-                .NotEmpty()
             );
 
             // Adding sub commands to root command.

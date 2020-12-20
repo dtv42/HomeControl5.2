@@ -153,12 +153,12 @@ namespace ModbusApp.Commands
                         if (options.Input)
                         {
                             CommandHelper.ReadingInputRegisters(console,
-                                                               client,
-                                                               options.RtuSlave.ID,
-                                                               options.Number,
-                                                               options.Offset,
-                                                               options.Type,
-                                                               options.Hex);
+                                                                client,
+                                                                options.RtuSlave.ID,
+                                                                options.Number,
+                                                                options.Offset,
+                                                                options.Type,
+                                                                options.Hex);
                         }
                     }
                     else

@@ -41,7 +41,7 @@ namespace EM300LRLib
         /// <summary>
         /// The EM300LR client settings.
         /// </summary>
-        private readonly EM300LRSettings _settings;
+        private readonly IEM300LRSettings _settings;
 
         /// <summary>
         /// The custom JSON serializer options.
@@ -104,7 +104,7 @@ namespace EM300LRLib
         /// <param name="settings">The EM300LR settings.</param>
         /// <param name="logger">The application logger instance.</param>
         public EM300LRGateway(EM300LRClient client,
-                              EM300LRSettings settings,
+                              IEM300LRSettings settings,
                               ILogger<EM300LRGateway> logger)
             : base(logger)
         {

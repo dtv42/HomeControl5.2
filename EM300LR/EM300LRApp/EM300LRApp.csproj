@@ -9,7 +9,7 @@
     <Company />
     <Description>EM300LR console application.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
-    <UserSecretsId>c4cb1834-981f-4235-909d-e830128918e4</UserSecretsId>
+    <UserSecretsId>6ca7ecb3-0837-401c-b61c-1b77dc19c956</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">

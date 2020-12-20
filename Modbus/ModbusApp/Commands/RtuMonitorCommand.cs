@@ -220,37 +220,37 @@ namespace ModbusApp.Commands
             if (options.Discrete)
             {
                 CommandHelper.ReadingDiscreteInputs(console,
-                                                   client,
-                                                   options.RtuSlave.ID,
-                                                   options.Number,
-                                                   options.Offset,
-                                                   header);
+                                                    client,
+                                                    options.RtuSlave.ID,
+                                                    options.Number,
+                                                    options.Offset,
+                                                    header);
             }
 
             // Reading holding registers.
             if (options.Holding)
             {
                 CommandHelper.ReadingHoldingRegisters(console,
-                                                     client,
-                                                     options.RtuSlave.ID,
-                                                     options.Number,
-                                                     options.Offset,
-                                                     options.Type,
-                                                     options.Hex,
-                                                     header);
+                                                      client,
+                                                      options.RtuSlave.ID,
+                                                      options.Number,
+                                                      options.Offset,
+                                                      options.Type,
+                                                      options.Hex,
+                                                      header);
             }
 
             // Reading input registers.
             if (options.Input)
             {
                 CommandHelper.ReadingInputRegisters(console,
-                                                   client,
-                                                   options.RtuSlave.ID,
-                                                   options.Number,
-                                                   options.Offset,
-                                                   options.Type,
-                                                   options.Hex,
-                                                   header);
+                                                    client,
+                                                    options.RtuSlave.ID,
+                                                    options.Number,
+                                                    options.Offset,
+                                                    options.Type,
+                                                    options.Hex,
+                                                    header);
             }
         }
 

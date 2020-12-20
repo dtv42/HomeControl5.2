@@ -13,6 +13,7 @@ namespace UtilityLib.Console
     #region Using Directives
 
     using System;
+    using System.Collections.Generic;
     using System.CommandLine;
     using System.CommandLine.Parsing;
     using System.Linq;
@@ -57,6 +58,14 @@ namespace UtilityLib.Console
             where TOption : Option
         {
             option.Argument.Arity = arity;
+            return option;
+        }
+
+        public static Option<char> FromAmong(this Option<char> option, string values)
+        {
+            List<char> chars = new List<char>();
+            chars.AddRange(values);
+            option.FromAmong(chars.Select(v => v.ToString()).ToArray());
             return option;
         }
 

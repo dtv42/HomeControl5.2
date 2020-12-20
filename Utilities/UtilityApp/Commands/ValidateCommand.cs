@@ -41,22 +41,27 @@ namespace UtilityApp.Commands
             logger.LogDebug("ValidateCommand()");
 
             // Setup command options.
-            AddOption(new Option<int> ("-d", "Default value"            ).Name("number").Default(1));
-            AddOption(new Option<int> ("-v", "Required value"           ).Name("number").IsRequired());
-            AddOption(new Option<int> ("-o", "Zero or one value"        ).Name("number").Arity(ArgumentArity.ZeroOrOne));
-            AddOption(new Option<int> ("-n", "Number value"             ).Name("number").FromAmong(1, 2, 3));
-            AddOption(new Option<int> ("-r", "Range value [0..10]"      ).Name("number").Range(0, 10));
-            AddOption(new Option<long>("-l", "Range value [0, 10000000]").Name("number").Range(0, 10000000L));
+            AddOption(new Option<int>   ("-d", "Default value"            ).Name("number"  ).Default(1));
+            AddOption(new Option<int>   ("-v", "Required value"           ).Name("number"  ).IsRequired());
+            AddOption(new Option<int>   ("-o", "Zero or one value"        ).Name("number"  ).Arity(ArgumentArity.ZeroOrOne));
+            AddOption(new Option<int>   ("-n", "Number value"             ).Name("number"  ).FromAmong(1, 2, 3));
+            AddOption(new Option<byte>  ("-b", "Byte value [0..255]"      ).Name("number"  ));
+            AddOption(new Option<ushort>("-i", "Integer value [0..65535]" ).Name("number"  ));
+            AddOption(new Option<int>   ("-r", "Range value [0..10]"      ).Name("number"  ).Range(0, 10));
+            AddOption(new Option<long>  ("-l", "Range value [0, 10000000]").Name("number"  ).Range(0, 10000000L));
+                                                                                           
+            AddOption(new Option<char>  ("-c", "Character value"          ).Name("char"    ));
+            AddOption(new Option<char>  ("-f", "Character value [A,B,C]"  ).Name("char"    ).FromAmong("ABC"));
 
-            AddOption(new Option<string>("-s", "String value"           ).Name("string"));
-            AddOption(new Option<string>("-m", "String value [max: 10]" ).Name("string").StringLength(10));
-            AddOption(new Option<string>("-e", "Not empty value"        ).Name("string").NotEmpty());
-            AddOption(new Option<string>("-w", "Not whitespace value"   ).Name("string").NotWhiteSpace());
-            AddOption(new Option<string>("-x", "Regex value"            ).Name("string").Regex(@"^[a-zA-Z\.\-_]+@([a-zA-Z\.\-_]+\.)+[a-zA-Z]{2,4}$"));
-            AddOption(new Option<string>("-g", "Guid value"             ).Name("guid").Guid());
-            AddOption(new Option<string>("-a", "IP address value"       ).Name("address").IPAddress());
-            AddOption(new Option<string>("-p", "IP endpoint value"      ).Name("endpoint").IPEndpoint());
-            AddOption(new Option<string>("-u", "URI value"              ).Name("uri").Uri());
+            AddOption(new Option<string>("-s", "String value"             ).Name("string"  ));
+            AddOption(new Option<string>("-m", "String value [max: 10]"   ).Name("string"  ).StringLength(10));
+            AddOption(new Option<string>("-e", "Not empty value"          ).Name("string"  ).NotEmpty());
+            AddOption(new Option<string>("-w", "Not whitespace value"     ).Name("string"  ).NotWhiteSpace());
+            AddOption(new Option<string>("-x", "Regex value"              ).Name("string"  ).Regex(@"^[a-zA-Z\.\-_]+@([a-zA-Z\.\-_]+\.)+[a-zA-Z]{2,4}$"));
+            AddOption(new Option<string>("-g", "Guid value"               ).Name("guid"    ).Guid());
+            AddOption(new Option<string>("-a", "IP address value"         ).Name("address" ).IPAddress());
+            AddOption(new Option<string>("-p", "IP endpoint value"        ).Name("endpoint").IPEndpoint());
+            AddOption(new Option<string>("-u", "URI value"                ).Name("uri"     ).Uri());
 
             // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, bool, ValidateOptions>((console, verbose, options) =>
@@ -73,18 +78,23 @@ namespace UtilityApp.Commands
                 console.Out.WriteLine($"V Integer Value: {options.IntegerV}");
                 console.Out.WriteLine($"O Integer Value: {options.IntegerO}");
                 console.Out.WriteLine($"N Integer Value: {options.IntegerN}");
+                console.Out.WriteLine($"B Integer Value: {options.IntegerB}");
+                console.Out.WriteLine($"I Integer Value: {options.IntegerI}");
                 console.Out.WriteLine($"R Integer Value: {options.IntegerR}");
                 console.Out.WriteLine($"L Integer Value: {options.IntegerL}");
 
-                console.Out.WriteLine($"S String  Value: '{options.StringS}'");
-                console.Out.WriteLine($"M String  Value: '{options.StringM}'");
-                console.Out.WriteLine($"E String  Value: '{options.StringE}'");
-                console.Out.WriteLine($"W String  Value: '{options.StringW}'");
-                console.Out.WriteLine($"X String  Value: '{options.StringX}'");
-                console.Out.WriteLine($"G String  Value: '{options.StringG}'");
-                console.Out.WriteLine($"A String  Value: '{options.StringA}'");
-                console.Out.WriteLine($"P String  Value: '{options.StringP}'");
-                console.Out.WriteLine($"U String  Value: '{options.StringU}'");
+                console.Out.WriteLine($"C Character Value: {options.CharacterC}");
+                console.Out.WriteLine($"F Character Value: {options.CharacterF}");
+
+                console.Out.WriteLine($"S String Value: '{options.StringS}'");
+                console.Out.WriteLine($"M String Value: '{options.StringM}'");
+                console.Out.WriteLine($"E String Value: '{options.StringE}'");
+                console.Out.WriteLine($"W String Value: '{options.StringW}'");
+                console.Out.WriteLine($"X String Value: '{options.StringX}'");
+                console.Out.WriteLine($"G String Value: '{options.StringG}'");
+                console.Out.WriteLine($"A String Value: '{options.StringA}'");
+                console.Out.WriteLine($"P String Value: '{options.StringP}'");
+                console.Out.WriteLine($"U String Value: '{options.StringU}'");
 
                 console.Out.WriteLine();
 

@@ -124,14 +124,14 @@ namespace UtilityApp.Commands
                 // Show command line parsed options.
                 console.Out.WriteLine($"CommandLine:");
 
-                //if (result.Has(dOption)) { console.Out.WriteLine($"    Data:     {options.Data}");    }
-                //if (result.Has(vOption)) { console.Out.WriteLine($"    Value:    {options.Value} ");  }
-                //if (result.Has(nOption)) { console.Out.WriteLine($"    Name:     {options.Name}");    }
-                //if (result.Has(gOption)) { console.Out.WriteLine($"    Guid:     {options.Guid}");    }
-                //if (result.Has(aOption)) { console.Out.WriteLine($"    Address:  {options.Address}"); }
-                //if (result.Has(eOption)) { console.Out.WriteLine($"    Endpoint: {options.Endpoint}");}
-                //if (result.Has(uOption)) { console.Out.WriteLine($"    Uri:      {options.Uri}");     }
-                //if (result.Has(cOption)) { console.Out.WriteLine($"    Code:     {options.Code}");    }
+                if (result.HasOption(dOption)) { console.Out.WriteLine($"    Data:     {options.Data}");    }
+                if (result.HasOption(vOption)) { console.Out.WriteLine($"    Value:    {options.Value} ");  }
+                if (result.HasOption(nOption)) { console.Out.WriteLine($"    Name:     {options.Name}");    }
+                if (result.HasOption(gOption)) { console.Out.WriteLine($"    Guid:     {options.Guid}");    }
+                if (result.HasOption(aOption)) { console.Out.WriteLine($"    Address:  {options.Address}"); }
+                if (result.HasOption(eOption)) { console.Out.WriteLine($"    Endpoint: {options.Endpoint}");}
+                if (result.HasOption(uOption)) { console.Out.WriteLine($"    Uri:      {options.Uri}");     }
+                if (result.HasOption(cOption)) { console.Out.WriteLine($"    Code:     {options.Code}");    }
 
                 console.Out.WriteLine();
 

@@ -13,78 +13,37 @@ namespace EM300LRApp.Commands
     #region Using Directives
 
     using System;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using EM300LRLib;
     using EM300LRLib.Models;
-    using EM300LRApp.Models;
+
+    using EM300LRApp.Options;
 
     #endregion Using Directives
 
     /// <summary>
     /// Application command "monitor".
     /// </summary>
-    [Command(Name = "monitor",
-             FullName = "EM300LR Monitor Command",
-             Description = "Monitoring data values from b-Control EM300LR energy manager.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    [HelpOption("-?|--help")]
-    public class MonitorCommand : BaseCommand<MonitorCommand, AppSettings>
+    public class MonitorCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
         private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-        private readonly EM300LRGateway _gateway;
 
         #endregion Private Data Members
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; set; }
-
-        #endregion Private Properties
-
-        #region Public Properties
-
-        [Option("-d|--data", Description = "Monitors Fronius data.")]
-        public bool Data { get; }
-
-        [Option("-t|--total", Description = "Monitors the total data.")]
-        public bool Total { get; }
-
-        [Option("-1|--phase1", Description = "Monitors the phase 1 data.")]
-        public bool Phase1 { get; }
-
-        [Option("-2|--phase2", Description = "Monitors the phase 2 data.")]
-        public bool Phase2 { get; }
-
-        [Option("-3|--phase3", Description = "Monitors the phase 3 data.")]
-        public bool Phase3 { get; }
-
-        [Argument(0, Description = "Monitors the named property.")]
-        public string Property { get; } = string.Empty;
-
-        [Option("--repeat", Description = "The number of iterations (default: forever).")]
-        public uint Repeat { get; set; } = 0;
-
-        [Option("--interval", Description = "The seconds between times to read (default: 10).")]
-        public uint Interval { get; set; } = 10;
-
-        #endregion Public Properties
 
         #region Constructors
 
@@ -92,270 +51,191 @@ namespace EM300LRApp.Commands
         /// Initializes a new instance of the <see cref="MonitorCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public MonitorCommand(EM300LRGateway gateway,
-                              IConsole console,
-                              AppSettings settings,
-                              IConfiguration config,
-                              IHostEnvironment environment,
-                              IHostApplicationLifetime lifetime,
-                              ILogger<MonitorCommand> logger,
-                              CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        public MonitorCommand(EM300LRGateway gateway, ILogger<ReadCommand> logger)
+            : base(logger, "monitor", "Monitoring data values from b-Control EM300LR energy manager.")
         {
             _logger?.LogDebug("MonitorCommand()");
 
-            // Setting the EM300LR instance.
-            _gateway = gateway;
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
+
+            AddOption(new Option<bool>(new string[] { "-d", "--data"     }, "Monitors all data"));
+            AddOption(new Option<bool>(new string[] { "-t", "--total"    }, "Monitors the total data"));
+            AddOption(new Option<bool>(new string[] { "-1", "--phase1"   }, "Monitors the phase 1 data"));
+            AddOption(new Option<bool>(new string[] { "-2", "--phase2"   }, "Monitors the phase 2 data"));
+            AddOption(new Option<bool>(new string[] { "-3", "--phase3"   }, "Monitors the phase 3 data"));
+            AddOption(new Option<uint>(new string[] { "-r", "--repeat"   }, "The number of iterations (default: forever)."));
+            AddOption(new Option<uint>(new string[] { "-i", "--interval" }, "The seconds between times to read (default: 10)."));
+
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, CancellationToken, GlobalOptions, MonitorOptions>
+                (async (console, token, globals, options) =>
+            {
+                logger.LogDebug("Handler()");
+
+                if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
+
+                if (globals.Verbose)
+                {
+                    console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                    console.Out.WriteLine($"Password:      {globals.Password}");
+                    console.Out.WriteLine($"Serialnumber:  {globals.SerialNumber}");
+                    console.Out.WriteLine($"Address:       {globals.Address}");
+                    console.Out.WriteLine($"Timeout:       {globals.Timeout}");
+                    console.Out.WriteLine();
+                }
+
+                try
+                {
+                    bool forever = (options.Repeat == 0);
+                    bool header = true;
+
+                    await Task.Factory.StartNew(async () =>
+                    {
+                        while (!token.IsCancellationRequested)
+                        {
+                            // Read the specified data.
+                            var start = DateTime.UtcNow;
+
+                            console.Out.WriteLine(start.ToLongTimeString());
+
+                            ReadingData(console, gateway, options, header);
+
+                            // Only first call is showing the header.
+                            header = false;
+                            var end = DateTime.UtcNow;
+                            var elapsed = (end - start).TotalMilliseconds;
+                            double delay = ((options.Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+
+                            console.Out.WriteLine($"Elapsed time: {(elapsed / 1000.0):F2}");
+
+                            if (options.Interval > 0)
+                            {
+                                if (delay < 0)
+                                {
+                                    console.YellowWriteLine("Monitoring: no time between reads.");
+                                }
+                                else
+                                {
+                                    await Task.Delay(TimeSpan.FromSeconds(delay), token);
+                                }
+                            }
+
+                            if (!forever && (--options.Repeat <= 0))
+                            {
+                                _closing.Set();
+                                break;
+                            }
+                        }
+                    }, token);
+
+                    Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        _closing.Set();
+                    });
+
+                    _closing.WaitOne();
+                }
+                catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
+                {
+                    console.Out.WriteLine($"Monitoring cancelled.");
+                    return (int)ExitCodes.OperationCanceled;
+                }
+                catch (OperationCanceledException)
+                {
+                    console.Out.WriteLine($"Monitoring cancelled.");
+                    return (int)ExitCodes.OperationCanceled;
+                }
+                catch (Exception)
+                {
+                    console.Out.WriteLine($"Monitoring exception.");
+                    return (int)ExitCodes.OperationCanceled;
+                }
+
+                return (int)ExitCodes.SuccessfullyCompleted;
+            });
         }
 
         #endregion Constructors
-
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public async Task<int> OnExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (!(Parent is null))
-            {
-                // Overriding EM300LR options.
-                _settings.BaseAddress = Parent.BaseAddress;
-                _settings.Timeout = Parent.Timeout;
-                _settings.Password = Parent.Password;
-                _settings.SerialNumber = Parent.SerialNumber;
-                _gateway.UpdateClient();
-            }
-
-            if (Parent?.ShowSettings ?? false)
-            {
-                _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-            }
-
-            try
-            {
-                bool forever = (Repeat == 0);
-                bool verbose = true;
-
-                await Task.Factory.StartNew(async () =>
-                {
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        // Read the specified data.
-                        var start = DateTime.UtcNow;
-                        ReadingData(verbose);
-                        // Only first call is verbose.
-                        verbose = false;
-                        var end = DateTime.UtcNow;
-                        double delay = ((Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
-
-                        if (Interval > 0)
-                        {
-                            if (delay < 0)
-                            {
-                                _logger?.LogWarning($"Monitoring: no time between reads (duration: {((end - start).TotalMilliseconds / 1000.0):F2}).");
-                            }
-                            else
-                            {
-                                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
-                            }
-                        }
-
-                        if (!forever && (--Repeat <= 0))
-                        {
-                            _closing.Set();
-                            break;
-                        }
-                    }
-
-                }, cancellationToken);
-
-                _console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
-                {
-                    _console.WriteLine($"Monitoring cancelled.");
-                    _closing.Set();
-                });
-
-                _closing.WaitOne();
-            }
-            catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-            }
-            catch (OperationCanceledException)
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-                throw;
-            }
-            catch
-            {
-                _logger.LogError("MonitorCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
-        }
-
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Data) ++options;
-                if (Total) ++options;
-                if (Phase1) ++options;
-                if (Phase2) ++options;
-                if (Phase3) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        if (typeof(EM300LRData).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Total)
-                    {
-                        if (typeof(TotalData).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Phase1)
-                    {
-                        if (typeof(Phase1Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Phase2)
-                    {
-                        if (typeof(Phase2Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Phase3)
-                    {
-                        if (typeof(Phase3Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        #endregion Public Methods
 
         #region Private Methods
 
         /// <summary>
         /// Reading the specified data.
         /// </summary>
-        private void ReadingData(bool verbose = false)
+        private void ReadingData(IConsole console, EM300LRGateway gateway, MonitorOptions options, bool header = false)
         {
-            DataStatus status = _gateway.ReadAll();
+            DataStatus status = gateway.ReadAll();
 
             if (status.IsGood)
             {
-                if (string.IsNullOrEmpty(Property))
+                if (string.IsNullOrEmpty(options.Name))
                 {
-                    if (Data)
+                    if (options.Data)
                     {
-                        if (verbose) _console.WriteLine($"Monitoring EM300LR data:");
-                        _console.WriteLine(JsonSerializer.Serialize<EM300LRData>(_gateway.Data, _options));
+                        if (header) console.Out.WriteLine($"Monitoring EM300LR data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<EM300LRData>(gateway.Data, _serializerOptions));
                     }
 
-                    if (Total)
+                    if (options.Total)
                     {
-                        if (verbose) _console.WriteLine($"Monitoring total data:");
-                        _console.WriteLine(JsonSerializer.Serialize<TotalData>(_gateway.TotalData, _options));
+                        if (header) console.Out.WriteLine($"Monitoring total data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<TotalData>(gateway.TotalData, _serializerOptions));
                     }
 
-                    if (Phase1)
+                    if (options.Phase1)
                     {
-                        if (verbose) _console.WriteLine($"Monitoring phase 1 data:");
-                        _console.WriteLine(JsonSerializer.Serialize<Phase1Data>(_gateway.Phase1Data, _options));
+                        if (header) console.Out.WriteLine($"Monitoring phase 1 data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<Phase1Data>(gateway.Phase1Data, _serializerOptions));
                     }
 
-                    if (Phase2)
+                    if (options.Phase2)
                     {
-                        if (verbose) _console.WriteLine($"Monitoring phase 2 data:");
-                        _console.WriteLine(JsonSerializer.Serialize<Phase2Data>(_gateway.Phase2Data, _options));
+                        if (header) console.Out.WriteLine($"Monitoring phase 2 data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<Phase2Data>(gateway.Phase2Data, _serializerOptions));
                     }
 
-                    if (Phase3)
+                    if (options.Phase3)
                     {
-                        if (verbose) _console.WriteLine($"Monitoring phase 3 data:");
-                        _console.WriteLine(JsonSerializer.Serialize<Phase3Data>(_gateway.Phase3Data, _options));
+                        if (header) console.Out.WriteLine($"Monitoring phase 3 data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<Phase3Data>(gateway.Phase3Data, _serializerOptions));
                     }
                 }
                 else
                 {
-                    if (verbose) _console.WriteLine($"Monitoring property '{Property}':");
+                    if (header) console.Out.WriteLine($"Monitoring property '{options.Name}':");
 
-                    if (Data)
+                    if (options.Data)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Data.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Data.GetPropertyValue(options.Name)}");
                     }
 
-                    if (Total)
+                    if (options.Total)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.TotalData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.TotalData.GetPropertyValue(options.Name)}");
                     }
 
-                    if (Phase1)
+                    if (options.Phase1)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Phase1Data.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Phase1Data.GetPropertyValue(options.Name)}");
                     }
 
-                    if (Phase2)
+                    if (options.Phase2)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Phase2Data.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Phase2Data.GetPropertyValue(options.Name)}");
                     }
 
-                    if (Phase3)
+                    if (options.Phase3)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Phase3Data.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Phase3Data.GetPropertyValue(options.Name)}");
                     }
                 }
             }
             else
             {
-                _console.WriteLine($"Error reading data from EM300LR energy manager.");
+                console.Out.WriteLine($"Error reading data from EM300LR energy manager.");
             }
         }
 

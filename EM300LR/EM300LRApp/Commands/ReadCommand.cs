@@ -10,70 +10,33 @@ namespace EM300LRApp.Commands
 {
     #region Using Directives
 
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using EM300LRLib;
     using EM300LRLib.Models;
-    using EM300LRApp.Models;
+
+    using EM300LRApp.Options;
 
     #endregion Using Directives
 
     /// <summary>
     /// Application command "read".
     /// </summary>
-    [Command(Name = "read",
-             FullName = "EM300LR Read Command",
-             Description = "Reading data values from b-Control EM300LR energy manager.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class ReadCommand : BaseCommand<ReadCommand, AppSettings>
+    public class ReadCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
-        private readonly EM300LRGateway _gateway;
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion Private Data Members
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion Private Properties
-
-        #region Public Properties
-
-        [Option("-d|--data", Description = "Reads all data.")]
-        public bool Data { get; }
-
-        [Option("-t|--total", Description = "Reads the total data.")]
-        public bool Total { get; }
-
-        [Option("-1|--phase1", Description = "Reads the phase 1 data.")]
-        public bool Phase1 { get; }
-
-        [Option("-2|--phase2", Description = "Reads the phase 2 data.")]
-        public bool Phase2 { get; }
-
-        [Option("-3|--phase3", Description = "Reads the phase 3 data.")]
-        public bool Phase3 { get; }
-
-        [Argument(0, Description = "Reads the named property.")]
-        public string Property { get; } = string.Empty;
-
-        [Option("--status", Description = "Shows the data status.")]
-        public bool Status { get; }
-
-        #endregion Public Properties
 
         #region Constructors
 
@@ -81,217 +44,122 @@ namespace EM300LRApp.Commands
         /// Initializes a new instance of the <see cref="ReadCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public ReadCommand(EM300LRGateway gateway,
-                           IConsole console,
-                           AppSettings settings,
-                           IConfiguration config,
-                           IHostEnvironment environment,
-                           IHostApplicationLifetime lifetime,
-                           ILogger<ReadCommand> logger,
-                           CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        public ReadCommand(EM300LRGateway gateway, ILogger<ReadCommand> logger)
+            : base(logger, "read", "Reading data values from b-Control EM300LR energy manager.")
         {
             _logger?.LogDebug("ReadCommand()");
 
-            // Setting the EM300LR instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
 
-        #endregion Constructors
+            AddOption(new Option<bool>(new string[] { "-d", "--data"   }, "Reads all data"));
+            AddOption(new Option<bool>(new string[] { "-t", "--total"  }, "Reads the total data"));
+            AddOption(new Option<bool>(new string[] { "-1", "--phase1" }, "Reads the phase 1 data"));
+            AddOption(new Option<bool>(new string[] { "-2", "--phase2" }, "Reads the phase 2 data"));
+            AddOption(new Option<bool>(new string[] { "-3", "--phase3" }, "Reads the phase 3 data"));
+            AddOption(new Option<bool>(new string[] { "-s", "--status" }, "Shows the data status"));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, ReadOptions>
+                ((console, globals, options) =>
             {
-                if (!(Parent is null))
+                logger.LogDebug("Handler()");
+
+                if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
+
+                if (globals.Verbose)
                 {
-                    // Overriding EM300LR options.
-                    _settings.BaseAddress = Parent.BaseAddress;
-                    _settings.Timeout = Parent.Timeout;
-                    _settings.Password = Parent.Password;
-                    _settings.SerialNumber = Parent.SerialNumber;
-                    _gateway.UpdateClient();
+                    console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                    console.Out.WriteLine($"Password:      {globals.Password}");
+                    console.Out.WriteLine($"Serialnumber:  {globals.SerialNumber}");
+                    console.Out.WriteLine($"Address:       {globals.Address}");
+                    console.Out.WriteLine($"Timeout:       {globals.Timeout}");
+                    console.Out.WriteLine();
                 }
 
-                if (Parent?.ShowSettings ?? false)
+                if (gateway.ReadAll().IsGood)
                 {
-                    _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-                }
-
-                if (_gateway.ReadAll().IsGood)
-                {
-                    if (string.IsNullOrEmpty(Property))
+                    if (string.IsNullOrEmpty(options.Name))
                     {
-                        if (Data)
+                        if (options.Data)
                         {
-                            _console.WriteLine($"Reading all data from EM300LR energy manager.");
-                            _console.WriteLine($"Data:");
-                            _console.WriteLine(JsonSerializer.Serialize<EM300LRData>(_gateway.Data, _options));
+                            console.Out.WriteLine($"Reading all data from EM300LR energy manager.");
+                            console.Out.WriteLine($"Data:");
+                            console.Out.WriteLine(JsonSerializer.Serialize<EM300LRData>(gateway.Data, _serializerOptions));
                         }
 
-                        if (Total)
+                        if (options.Total)
                         {
-                            _console.WriteLine($"Reading all total data from EM300LR energy manager.");
-                            _console.WriteLine($"Total:");
-                            _console.WriteLine(JsonSerializer.Serialize<TotalData>(_gateway.TotalData, _options));
+                            console.Out.WriteLine($"Reading all total data from EM300LR energy manager.");
+                            console.Out.WriteLine($"Total:");
+                            console.Out.WriteLine(JsonSerializer.Serialize<TotalData>(gateway.TotalData, _serializerOptions));
                         }
 
-                        if (Phase1)
+                        if (options.Phase1)
                         {
-                            _console.WriteLine($"Reading all phase 1 data from EM300LR energy manager.");
-                            _console.WriteLine($"Phase1:");
-                            _console.WriteLine(JsonSerializer.Serialize<Phase1Data>(_gateway.Phase1Data, _options));
+                            console.Out.WriteLine($"Reading all phase 1 data from EM300LR energy manager.");
+                            console.Out.WriteLine($"Phase1:");
+                            console.Out.WriteLine(JsonSerializer.Serialize<Phase1Data>(gateway.Phase1Data, _serializerOptions));
                         }
 
-                        if (Phase2)
+                        if (options.Phase2)
                         {
-                            _console.WriteLine($"Reading all phase 2 data from EM300LR energy manager.");
-                            _console.WriteLine($"Phase2:");
-                            _console.WriteLine(JsonSerializer.Serialize<Phase2Data>(_gateway.Phase2Data, _options));
+                            console.Out.WriteLine($"Reading all phase 2 data from EM300LR energy manager.");
+                            console.Out.WriteLine($"Phase2:");
+                            console.Out.WriteLine(JsonSerializer.Serialize<Phase2Data>(gateway.Phase2Data, _serializerOptions));
                         }
 
-                        if (Phase3)
+                        if (options.Phase3)
                         {
-                            _console.WriteLine($"Reading all phase 3 data from EM300LR energy manager.");
-                            _console.WriteLine($"Phase3:");
-                            _console.WriteLine(JsonSerializer.Serialize<Phase3Data>(_gateway.Phase3Data, _options));
+                            console.Out.WriteLine($"Reading all phase 3 data from EM300LR energy manager.");
+                            console.Out.WriteLine($"Phase3:");
+                            console.Out.WriteLine(JsonSerializer.Serialize<Phase3Data>(gateway.Phase3Data, _serializerOptions));
                         }
                     }
                     else
                     {
-                        if (Data)
+                        if (options.Data)
                         {
-                            _console.WriteLine($"Value of EM300LR data property '{Property}' = {_gateway.Data.GetPropertyValue(Property)}");
+                            console.Out.WriteLine($"Value of EM300LR data property '{options.Name}' = {gateway.Data.GetPropertyValue(options.Name)}");
                         }
 
-                        if (Total)
+                        if (options.Total)
                         {
-                            _console.WriteLine($"Value of total data property '{Property}' = {_gateway.TotalData.GetPropertyValue(Property)}");
+                            console.Out.WriteLine($"Value of total data property '{options.Name}' = {gateway.TotalData.GetPropertyValue(options.Name)}");
                         }
 
-                        if (Phase1)
+                        if (options.Phase1)
                         {
-                            _console.WriteLine($"Value of phase 1 data property '{Property}' = {_gateway.Phase1Data.GetPropertyValue(Property)}");
+                            console.Out.WriteLine($"Value of phase 1 data property '{options.Name}' = {gateway.Phase1Data.GetPropertyValue(options.Name)}");
                         }
 
-                        if (Phase2)
+                        if (options.Phase2)
                         {
-                            _console.WriteLine($"Value of phase 2 data property '{Property}' = {_gateway.Phase2Data.GetPropertyValue(Property)}");
+                            console.Out.WriteLine($"Value of phase 2 data property '{options.Name}' = {gateway.Phase2Data.GetPropertyValue(options.Name)}");
                         }
 
-                        if (Phase3)
+                        if (options.Phase3)
                         {
-                            _console.WriteLine($"Value of phase 3 data property '{Property}' = {_gateway.Phase3Data.GetPropertyValue(Property)}");
+                            console.Out.WriteLine($"Value of phase 3 data property '{options.Name}' = {gateway.Phase3Data.GetPropertyValue(options.Name)}");
                         }
                     }
                 }
                 else
                 {
-                    _console.WriteLine($"Error reading all data from EM300LR energy manager.");
+                    console.Out.WriteLine($"Error reading all data from EM300LR energy manager.");
                 }
 
-                if (Status)
+                if (options.Status)
                 {
-                    _console.WriteLine($"Status:");
-                    _console.WriteLine(JsonSerializer.Serialize<DataStatus>(_gateway.Status, _options));
+                    console.Out.WriteLine($"Status:");
+                    console.Out.WriteLine(JsonSerializer.Serialize<DataStatus>(gateway.Status, _serializerOptions));
                 }
-            }
-            catch
-            {
-                _logger.LogError("ReadCommand exception");
-                throw;
-            }
 
-            return ExitCodes.SuccessfullyCompleted;
+                return (int)ExitCodes.SuccessfullyCompleted;
+            });
         }
-
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Data) ++options;
-                if (Total) ++options;
-                if (Phase1) ++options;
-                if (Phase2) ++options;
-                if (Phase3) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        if (typeof(EM300LRData).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Total)
-                    {
-                        if (typeof(TotalData).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Phase1)
-                    {
-                        if (typeof(Phase1Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Phase2)
-                    {
-                        if (typeof(Phase2Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                    
-                    if (Phase3)
-                    {
-                        if (typeof(Phase3Data).GetProperty(Property) is null)
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        #endregion
     }
+
+    #endregion Constructors
 }

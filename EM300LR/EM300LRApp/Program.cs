@@ -55,16 +55,12 @@ namespace EM300LRApp
                 return await Host.CreateDefaultBuilder()
                     .ConfigureServices((context, services) =>
                     {
-                        var settings = (EM300LRSettings)context.Configuration.GetSection("AppSettings").Get<AppSettings>();
+                        var settings = context.Configuration.GetSection("AppSettings").Get<AppSettings>();
 
-                        // Configure the EM300LR specific settings and the singleton EM300LR instances.
-                        // Add a singleton service using the application settings implementing EM300LR client settings.
+                        // Configure the singleton EM300LR client instance.
                         services
-                            .AddSingleton(settings);
-
-                        services
-                            // Configure the singleton EM300LR client instance.
-                            .AddPollyHttpClient("gateway",
+                            .AddSingleton<IEM300LRSettings>(settings.GlobalOptions)
+                            .AddPollyHttpClient<EM300LRClient>("EM300LRClient",
                                 new List<TimeSpan>
                                 {
                                     TimeSpan.FromSeconds(10),
@@ -73,28 +69,27 @@ namespace EM300LRApp
                                 },
                                 client =>
                                 {
-                                    client.BaseAddress = new Uri(settings.Address);
-                                    client.Timeout = TimeSpan.FromMilliseconds(settings.Timeout);
+                                    client.BaseAddress = new Uri(settings.GlobalOptions.Address);
+                                    client.Timeout = TimeSpan.FromMilliseconds(settings.GlobalOptions.Timeout);
                                 });
 
                         // Add single gateway.
-                        services.AddSingleton<EM300LRGateway>();
+                        services
+                            .AddSingleton<EM300LRGateway>()
 
                         // Add command options.
-                        services
-                            .AddSingleton<GlobalOptions>()
+                            .AddSingletonFromSection<GlobalOptions>()
+                            .AddSingleton<InfoOptions>()
+                            .AddSingleton<ReadOptions>()
+                            .AddSingleton<MonitorOptions>()
 
                             // Add commands.
+                            .AddSingleton<InfoCommand>()
                             .AddSingleton<MonitorCommand>()
                             .AddSingleton<ReadCommand>()
-                            .AddSingleton<InfoCommand>()
 
                             // Add root command.
                             .AddSingleton<RootCommand, AppCommand>();
-                    })
-                    .ConfigureLogging((context, logger) =>
-                    {
-
                     })
                     .UseSerilog((context, logger) =>
                     {
@@ -103,16 +98,27 @@ namespace EM300LRApp
                     .Build()
                     .RunCommandLineAsync(args);
             }
-            catch (Exception exception)
+            catch (ArgumentException ax)
             {
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
 
-                    Console.Error.WriteLine($"Unhandled exception: {exception.Message}");
+                    Console.Error.WriteLine(ax.Message);
 
-                    if (exception.InnerException is not null)
+                    Console.ResetColor();
+                    return (int)ExitCodes.IncorrectFunction;
+                }
+            }
+            catch (Exception ex)
+            {
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+
+                    Console.Error.WriteLine($"Unhandled exception: {ex.Message}");
+
+                    if (ex.InnerException is not null)
                     {
-                        Console.Error.WriteLine($"    Inner Exception: {exception.InnerException.Message}");
+                        Console.Error.WriteLine($"    Inner Exception: {ex.InnerException.Message}");
                     }
 
                     Console.ResetColor();

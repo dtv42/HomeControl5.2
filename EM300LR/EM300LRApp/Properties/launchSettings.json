@@ -2,9 +2,9 @@
   "profiles": {
     "EM300LRApp": {
       "commandName": "Project",
-      "commandLineArgs": "read",
+      "commandLineArgs": "--verbose read -d",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "Development"
       }
     }
   }

@@ -30,8 +30,12 @@ namespace UtilityApp.Options
         /// <param name="v"></param>
         /// <param name="o"></param>
         /// <param name="n"></param>
+        /// <param name="b"></param>
+        /// <param name="i"></param>
         /// <param name="r"></param>
         /// <param name="l"></param>
+        /// <param name="c"></param>
+        /// <param name="f"></param>
         /// <param name="s"></param>
         /// <param name="m"></param>
         /// <param name="e"></param>
@@ -41,15 +45,20 @@ namespace UtilityApp.Options
         /// <param name="a"></param>
         /// <param name="p"></param>
         /// <param name="u"></param>
-        public ValidateOptions(int d, int v, int o, int n, int r, long l,
+        public ValidateOptions(int d, int v, int o, int n, byte b, ushort i, int r, long l, char c, char f,
                                string s, string m, string e, string w, string x, string g, string a, string p, string u)
         {
             IntegerD = d;
             IntegerV = v;
             IntegerO = o;
             IntegerN = n;
+            IntegerB = b;
+            IntegerI = i;
             IntegerR = r;
             IntegerL = l;
+
+            CharacterC = c;
+            CharacterF = f;
 
             StringS = s;
             StringM = m;
@@ -64,21 +73,26 @@ namespace UtilityApp.Options
 
         #endregion
 
-        public int IntegerD { get; set; }
-        public int IntegerV { get; set; }
-        public int IntegerO { get; set; }
-        public int IntegerN { get; set; }
-        public int IntegerR { get; set; }
-        public long IntegerL { get; set; }
+        public int    IntegerD { get; set; }
+        public int    IntegerV { get; set; }
+        public int    IntegerO { get; set; }
+        public int    IntegerN { get; set; }
+        public byte   IntegerB { get; set; }
+        public ushort IntegerI { get; set; }
+        public int    IntegerR { get; set; }
+        public long   IntegerL { get; set; }
 
-        public string StringS { get; set; } = string.Empty;
-        public string StringM { get; set; } = string.Empty;
-        public string StringE { get; set; } = string.Empty;
-        public string StringW { get; set; } = string.Empty;
-        public string StringX { get; set; } = string.Empty;
-        public string StringG { get; set; } = string.Empty;
-        public string StringA { get; set; } = string.Empty;
-        public string StringP { get; set; } = string.Empty;
-        public string StringU { get; set; } = string.Empty;
+        public char CharacterC { get; set; }
+        public char CharacterF { get; set; }
+
+        public string  StringS { get; set; } = string.Empty;
+        public string  StringM { get; set; } = string.Empty;
+        public string  StringE { get; set; } = string.Empty;
+        public string  StringW { get; set; } = string.Empty;
+        public string  StringX { get; set; } = string.Empty;
+        public string  StringG { get; set; } = string.Empty;
+        public string  StringA { get; set; } = string.Empty;
+        public string  StringP { get; set; } = string.Empty;
+        public string  StringU { get; set; } = string.Empty;
     }
 }

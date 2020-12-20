@@ -34,7 +34,7 @@ namespace EM300LRLib.Models
         /// The Http client timeout (msec).
         /// </summary>
         [Range(0, int.MaxValue)]
-        public int Timeout { get; set; } = 1000;
+        public int Timeout { get; set; } = 5000;
 
         /// <summary>
         /// Login password for the EM300LR web service.

@@ -24,11 +24,11 @@ namespace UtilityLib.Webapp
     /// <summary>
     /// Helper class implementing a status health check for a gateway.
     /// </summary>
-    public class GatewayHealthCheck : BaseClass, IHealthCheck
+    public class GatewayHealthCheck<TGateway> : BaseClass, IHealthCheck where TGateway : class, IGateway
     {
         #region Private Fields
 
-        private readonly IGateway _gateway;
+        private readonly TGateway _gateway;
 
         #endregion Private Fields
 
@@ -39,7 +39,7 @@ namespace UtilityLib.Webapp
         /// </summary>
         /// <param name="gateway">The gateway instance.</param>
         /// <param name="logger">The logger instance.</param>
-        public GatewayHealthCheck(IGateway gateway, ILogger<GatewayHealthCheck> logger)
+        public GatewayHealthCheck(TGateway gateway, ILogger<GatewayHealthCheck<TGateway>> logger)
             : base(logger)
         {
             _gateway = gateway;

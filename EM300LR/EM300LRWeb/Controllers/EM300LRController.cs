@@ -20,6 +20,8 @@ namespace EM300LRWeb.Controllers
     using Swashbuckle.AspNetCore.Annotations;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using EM300LRLib;
     using EM300LRLib.Models;
     using EM300LRWeb.Models;
@@ -32,7 +34,7 @@ namespace EM300LRWeb.Controllers
     [ApiController]
     [Route("/")]
     [Produces("application/json")]
-    public class EM300LRController : BaseController<AppSettings>
+    public class EM300LRController : BaseController
     {
         #region Private Fields
 
@@ -47,18 +49,12 @@ namespace EM300LRWeb.Controllers
         /// The parameters provided by dependency injection are used to set private fields.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="settings"></param>
         /// <param name="config"></param>
         /// <param name="environment"></param>
         /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        public EM300LRController(EM300LRGateway gateway,
-                                 AppSettings settings,
-                                 IConfiguration config,
-                                 IHostEnvironment environment,
-                                 IHostApplicationLifetime lifetime,
-                                 ILogger<EM300LRController> logger)
-            : base(settings, config, environment, lifetime, logger)
+        public EM300LRController(EM300LRGateway gateway, IConfiguration configuration, ILogger<EM300LRController> logger)
+            : base(configuration, logger)
         {
             _gateway = gateway;
         }

@@ -13,17 +13,17 @@ namespace EM300LRWeb
     #region Using Directives
 
     using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Hosting;
 
-    using UtilityLib;
-    using EM300LRWeb.Models;
+    using Serilog;
 
     #endregion Using Directives
 
     /// <summary>
     ///  Application class providing the main entry point.
     /// </summary>
-    public static class Program
+    public class Program
     {
         /// <summary>
         ///  Main application entrypoint creating a Host instance and run the web application.
@@ -43,8 +43,13 @@ namespace EM300LRWeb
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.ConfigureBaseHost<AppSettings>()
-                              .UseStartup<Startup>();
+                    webBuilder
+                        .CaptureStartupErrors(true)
+                        .UseSerilog((context, logger) =>
+                        {
+                            logger.ReadFrom.Configuration(context.Configuration);
+                        })
+                        .UseStartup<Startup>();
                 });
     }
 }

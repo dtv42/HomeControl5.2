@@ -71,7 +71,7 @@ namespace UtilityWeb
 
             // Add the gateway service.
             services
-                .AddSingleton<IGateway, WebGateway>()
+                .AddSingleton<WebGateway>()
 
             // Add the ping settings.
                 .AddSingleton<IPingHealthCheckOptions>(settings.PingOptions)
@@ -79,10 +79,10 @@ namespace UtilityWeb
             // Configure health checks.
                 .AddHealthChecks()
                     .AddProcessAllocatedMemoryHealthCheck(maximumMegabytesAllocated: 100, tags: new[] { "process", "memory" })
-                    .AddCheck<RandomHealthCheck> ("random1",  tags: new[] { "random"  })
-                    .AddCheck<RandomHealthCheck> ("random2",  tags: new[] { "random"  })
-                    .AddCheck<GatewayHealthCheck>("gateway1", tags: new[] { "gateway" })
-                    .AddCheck<PingHealthCheck>   ("gateway2", tags: new[] { "gateway" })
+                    .AddCheck<GatewayHealthCheck<WebGateway>>("gateway1", tags: new[] { "gateway" })
+                    .AddCheck<PingHealthCheck>("gateway2", tags: new[] { "gateway" })
+                    .AddCheck<RandomHealthCheck>("random1", tags: new[] { "random" })
+                    .AddCheck<RandomHealthCheck>("random2", tags: new[] { "random" })
                 ;
 
             // Adding healthchecks UI configuring endpoints.
@@ -117,7 +117,7 @@ namespace UtilityWeb
         /// <param name="env">The web hosting environment.</param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.ApplicationServices.GetService<IGateway>().Startup();
+            app.ApplicationServices.GetService<WebGateway>().Startup();
 
             if (env.IsDevelopment())
             {

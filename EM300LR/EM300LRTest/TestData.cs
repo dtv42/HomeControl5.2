@@ -27,7 +27,7 @@ namespace EM300LRTest
     {
         #region Private Data Members
 
-        private EM300LRGateway _gateway { get; }
+        private readonly EM300LRGateway _gateway;
 
         #endregion
 

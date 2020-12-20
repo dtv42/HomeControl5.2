@@ -31,7 +31,7 @@ namespace EM300LRTest
         public EM300LRGateway Gateway { get; private set; }
         public EM300LRSettings Settings { get; private set; } = new EM300LRSettings()
         {
-            BaseAddress = "http://10.0.1.5"
+            Address = "http://10.0.1.5"
         };
 
         #endregion Public Properties
@@ -45,13 +45,12 @@ namespace EM300LRTest
             var loggerFactory = new LoggerFactory();
 
             var configuration = new ConfigurationBuilder()
-                .AddUserSecrets("c4cb1834-981f-4235-909d-e830128918e4")
+                .AddUserSecrets("15e9821a-836b-4bb0-96d6-e83cb4b42cd4")
                 .Build();
 
             configuration.GetSection("AppSettings").Bind(Settings);
 
             var client = new EM300LRClient(new HttpClient(),
-                                           Settings,
                                            loggerFactory.CreateLogger<EM300LRClient>());
 
             Gateway = new EM300LRGateway(client,

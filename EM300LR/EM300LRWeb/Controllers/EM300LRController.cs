@@ -110,7 +110,13 @@ namespace EM300LRWeb.Controllers
 
             return Ok(new EM300LRInfo()
             {
-                Settings = _gateway.Settings,
+                Settings = new EM300LRSettings()
+                {
+                    Address = _gateway.Settings.Address,
+                    Timeout = _gateway.Settings.Timeout,
+                    Password = _gateway.Settings.Password,
+                    SerialNumber = _gateway.Settings.SerialNumber
+                },
                 IsStartupOk = _gateway.IsStartupOk,
                 IsLocked = _gateway.IsLocked,
                 Status = _gateway.Status

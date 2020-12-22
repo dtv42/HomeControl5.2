@@ -44,7 +44,6 @@ namespace ETAPU11Test
 
             _gateway = fixture.Gateway;
             _gateway.Settings.TcpSlave.Address = "10.0.1.4";
-            _gateway.UpdateClient();
         }
 
         #endregion

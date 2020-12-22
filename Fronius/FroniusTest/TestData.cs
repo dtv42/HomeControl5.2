@@ -10,11 +10,10 @@ namespace FroniusTest
 {
     #region Using Directives
 
-    using System.Globalization;
-
     using Xunit;
 
     using UtilityLib;
+
     using FroniusLib;
     using FroniusLib.Models;
 
@@ -37,11 +36,9 @@ namespace FroniusTest
         /// <summary>
         /// Initializes a new instance of the <see cref="TestData"/> class.
         /// </summary>
+        /// <param name="fixture">The </param>
         public TestData(GatewayFixture fixture)
         {
-            // Set the default culture.
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-
             _gateway = fixture.Gateway;
         }
 

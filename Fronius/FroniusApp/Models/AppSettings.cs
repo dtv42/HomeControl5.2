@@ -12,15 +12,16 @@ namespace FroniusApp.Models
 {
     #region Using Directives
 
-    using FroniusLib.Models;
+    using FroniusApp.Options;
 
-    #endregion
+    #endregion Using Directives
 
     /// <summary>
     /// The application settings. The class contains all application settings as properties and are configured
     /// using application configuration files (e.g. appsettings.json), or environment variables.
     /// </summary>
-    public class AppSettings : FroniusSettings
+    public class AppSettings
     {
+        public GlobalOptions GlobalOptions { get; set; } = new GlobalOptions();
     }
 }

@@ -14,286 +14,156 @@ namespace FroniusApp.Commands
 
     using System;
     using System.Collections.Generic;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using FroniusLib.Models;
-    using FroniusApp.Models;
+
+    using FroniusApp.Options;
 
     #endregion
 
     /// <summary>
     /// Application command "info".
     /// </summary>
-    [Command(Name = "info",
-             FullName = "Fronius Info Command",
-             Description = "Reading data values from Fronius Symo 8.2-3-M solar inverter.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class InfoCommand : BaseCommand<InfoCommand, AppSettings>
+    public class InfoCommand : BaseCommand
     {
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("-d|--data", Description = "Gets all data.")]
-        public bool Data { get; }
-
-        [Option("-c|--common", Description = "Get the inverter common data.")]
-        public bool Common { get; }
-
-        [Option("-i|--inverter", Description = "Get the inverter info.")]
-        public bool Inverter { get; }
-
-        [Option("-l|--logger", Description = "Get the data logger info.")]
-        public bool Logger { get; }
-
-        [Option("-m|--minmax", Description = "Get the inverter minmax data.")]
-        public bool MinMax { get; }
-
-        [Option("-p|--phase", Description = "Get the inverter phase data.")]
-        public bool Phase { get; }
-
-        [Argument(0, Description = "Specify the named property.")]
-        public string Property { get; } = string.Empty;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InfoCommand"/> class.
         /// </summary>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public InfoCommand(IConsole console,
-                           AppSettings settings,
-                           IConfiguration config,
-                           IHostEnvironment environment,
-                           IHostApplicationLifetime lifetime,
-                           ILogger<InfoCommand> logger,
-                           CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public InfoCommand(ILogger<InfoCommand> logger)
+            : base(logger, "info", "Showing data info from Fronius Symo 8.2-3-M solar inverter.")
         {
             _logger?.LogDebug("InfoCommand()");
+
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
+
+            AddOption(new Option<bool>(new string[] { "-d", "--data"     }, "Gets all data"));
+            AddOption(new Option<bool>(new string[] { "-c", "--common"   }, "Gets the inverter common data"));
+            AddOption(new Option<bool>(new string[] { "-i", "--inverter" }, "Gets the inverter info data"));
+            AddOption(new Option<bool>(new string[] { "-m", "--minmax"   }, "Gets the inverter minmax data"));
+            AddOption(new Option<bool>(new string[] { "-p", "--phase"    }, "Gets the inverter phase data"));
+            AddOption(new Option<bool>(new string[] { "-l", "--logger"   }, "Gets the logger info data"));
+
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, InfoOptions>
+                ((console, globals, options) =>
+                {
+                    logger.LogDebug("Handler()");
+
+                    if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
+                    {
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine();
+                    }
+
+                    if (string.IsNullOrEmpty(options.Name))
+                    {
+                        if (options.Data)
+                        {
+                            console.Out.WriteLine($"Data:");
+                            ShowProperties(console, typeof(FroniusData));
+                        }
+
+                        if (options.Common)
+                        {
+                            console.Out.WriteLine($"Common:");
+                            ShowProperties(console, typeof(CommonData));
+                        }
+
+                        if (options.Inverter)
+                        {
+                            console.Out.WriteLine($"Inverter:");
+                            ShowProperties(console, typeof(InverterInfo));
+                        }
+
+                        if (options.Logger)
+                        {
+                            console.Out.WriteLine($"Logger:");
+                            ShowProperties(console, typeof(LoggerInfo));
+                        }
+
+                        if (options.MinMax)
+                        {
+                            console.Out.WriteLine($"MinMax:");
+                            ShowProperties(console, typeof(MinMaxData));
+                        }
+
+                        if (options.Phase)
+                        {
+                            console.Out.WriteLine($"Phase:");
+                            ShowProperties(console, typeof(PhaseData));
+                        }
+                    }
+                    else
+                    {
+                        if (options.Data)
+                        {
+                            ShowProperty(console, typeof(FroniusData), options.Name);
+                        }
+
+                        if (options.Common)
+                        {
+                            ShowProperty(console, typeof(CommonData), options.Name);
+                        }
+
+                        if (options.Inverter)
+                        {
+                            ShowProperty(console, typeof(InverterInfo), options.Name);
+                        }
+
+                        if (options.Logger)
+                        {
+                            ShowProperty(console, typeof(LoggerInfo), options.Name);
+                        }
+
+                        if (options.MinMax)
+                        {
+                            ShowProperty(console, typeof(MinMaxData), options.Name);
+                        }
+
+                        if (options.Phase)
+                        {
+                            ShowProperty(console, typeof(PhaseData), options.Name);
+                        }
+                    }
+
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
 
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        _console.WriteLine($"Data:");
-                        ShowProperties(typeof(FroniusData));
-                    }
-
-                    if (Common)
-                    {
-                        _console.WriteLine($"Common:");
-                        ShowProperties(typeof(CommonData));
-                    }
-
-                    if (Inverter)
-                    {
-                        _console.WriteLine($"Inverter:");
-                        ShowProperties(typeof(InverterInfo));
-                    }
-
-                    if (Logger)
-                    {
-                        _console.WriteLine($"Logger:");
-                        ShowProperties(typeof(LoggerInfo));
-                    }
-
-                    if (MinMax)
-                    {
-                        _console.WriteLine($"MinMax:");
-                        ShowProperties(typeof(MinMaxData));
-                    }
-
-                    if (Phase)
-                    {
-                        _console.WriteLine($"Phase:");
-                        ShowProperties(typeof(PhaseData));
-                    }
-                }
-                else
-                {
-                    if (Data)
-                    {
-                        ShowProperty(typeof(FroniusData), Property);
-                    }
-
-                    if (Common)
-                    {
-                        ShowProperty(typeof(CommonData), Property);
-                    }
-
-                    if (Inverter)
-                    {
-                        ShowProperty(typeof(InverterInfo), Property);
-                    }
-
-                    if (Logger)
-                    {
-                        ShowProperty(typeof(LoggerInfo), Property);
-                    }
-
-                    if (MinMax)
-                    {
-                        ShowProperty(typeof(MinMaxData), Property);
-                    }
-
-                    if (Phase)
-                    {
-                        ShowProperty(typeof(PhaseData), Property);
-                    }
-                }
-            }
-            catch
-            {
-                _logger.LogError("InfoCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
-        }
-
-        #endregion
+        #endregion Constructors
 
         #region Private Methods
-
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Data) ++options;
-                if (Common) ++options;
-                if (Inverter) ++options;
-                if (Logger) ++options;
-                if (MinMax) ++options;
-                if (Phase) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        if (!typeof(FroniusData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Common)
-                    {
-                        if (!typeof(CommonData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Inverter)
-                    {
-                        if (!typeof(InverterInfo).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Logger)
-                    {
-                        if (!typeof(LoggerInfo).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (MinMax)
-                    {
-                        if (!typeof(MinMaxData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Phase)
-                    {
-                        if (!typeof(PhaseData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
 
         /// <summary>
         /// Displays a list of property names.
         /// </summary>
         /// <param name="type"></param>
-        private void ShowProperties(Type type)
+        private static void ShowProperties(IConsole console, Type type)
         {
-            _console.WriteLine($"List of Properties:");
+            console.Out.WriteLine($"List of Properties:");
             var names = type.GetProperties().Select(p => p.Name);
 
             foreach (var name in names)
             {
-                _console.WriteLine($"    {name}");
+                console.Out.WriteLine($"    {name}");
             }
 
-            _console.WriteLine();
+            console.Out.WriteLine();
         }
 
         /// <summary>
@@ -301,33 +171,33 @@ namespace FroniusApp.Commands
         /// </summary>
         /// <param name="type"></param>
         /// <param name="name"></param>
-        private void ShowProperty(Type type, string name)
+        private static void ShowProperty(IConsole console, Type type, string name)
         {
-            _console.WriteLine($"Property {name}:");
+            console.Out.WriteLine($"Property {name}:");
             var info = type.GetProperty(name);
             var pType = info?.PropertyType;
 
-            _console.WriteLine($"   IsProperty:    {!(info is null)}");
-            _console.WriteLine($"   CanRead:       {info?.CanRead}");
-            _console.WriteLine($"   CanWrite:      {info?.CanWrite}");
+            console.Out.WriteLine($"   IsProperty:    {!(info is null)}");
+            console.Out.WriteLine($"   CanRead:       {info?.CanRead}");
+            console.Out.WriteLine($"   CanWrite:      {info?.CanWrite}");
 
             if (info?.PropertyType.IsArray ?? false)
             {
-                _console.WriteLine($"   IsArray:       {pType?.IsArray}");
-                _console.WriteLine($"   ElementType:   {pType?.GetElementType()}");
+                console.Out.WriteLine($"   IsArray:       {pType?.IsArray}");
+                console.Out.WriteLine($"   ElementType:   {pType?.GetElementType()}");
             }
             else if ((pType?.IsGenericType ?? false) && (pType?.GetGenericTypeDefinition() == typeof(List<>)))
             {
-                _console.WriteLine($"   IsList:        List<ItempType>");
-                _console.WriteLine($"   ItemType:      {pType?.GetGenericArguments().Single()}");
+                console.Out.WriteLine($"   IsList:        List<ItempType>");
+                console.Out.WriteLine($"   ItemType:      {pType?.GetGenericArguments().Single()}");
             }
             else
             {
-                _console.WriteLine($"   PropertyType:  {pType?.Name}");
+                console.Out.WriteLine($"   PropertyType:  {pType?.Name}");
             }
-            _console.WriteLine();
+            console.Out.WriteLine();
         }
-        
-        #endregion
+
+        #endregion Private Methods
     }
 }

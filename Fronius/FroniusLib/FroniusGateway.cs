@@ -16,9 +16,10 @@ namespace FroniusLib
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using FroniusLib.Models;
 
     #endregion
@@ -28,7 +29,7 @@ namespace FroniusLib
     /// The data properties are based on the specification Fronius
     /// Solar API V1 (42,0410,2012,EN 008-15092016).
     /// </summary>
-    public class FroniusGateway : BaseGateway<FroniusSettings>
+    public class FroniusGateway : BaseGateway
     {
         #region Private Data Members
 
@@ -36,6 +37,11 @@ namespace FroniusLib
         /// The HTTP client instantiated using the HTTP client factory.
         /// </summary>
         private readonly FroniusClient _client;
+
+        /// <summary>
+        /// The EM300LR client settings.
+        /// </summary>
+        private readonly FroniusSettings _settings;
 
         #endregion
 
@@ -102,14 +108,21 @@ namespace FroniusLib
         /// Initializes a new instance of the <see cref="FroniusGateway"/> class.
         /// </summary>
         /// <param name="client">The custom HTTP client.</param>
+        /// <param name="settings">The Fronius settings.</param>
         /// <param name="logger">The application logger instance.</param>
-        /// <param name="options">The Fronius settings.</param>
         public FroniusGateway(FroniusClient client,
-                              FroniusSettings settings,
+                              IFroniusSettings settings,
                               ILogger<FroniusGateway> logger)
-            : base(settings, logger)
+            : base(logger)
         {
             _logger?.LogDebug($"FroniusGateway()");
+
+            _settings = new FroniusSettings()
+            {
+                Address = settings.Address,
+                Timeout = settings.Timeout,
+                DeviceID = settings.DeviceID
+            };
 
             _client = client;
         }
@@ -539,7 +552,7 @@ namespace FroniusLib
             if (IsStartupOk)
             {
                 _logger.LogInformation("Fronius Symo Gateway:");
-                _logger.LogInformation($"    Base Address: {_settings.BaseAddress}");
+                _logger.LogInformation($"    Base Address: {_settings.Address}");
                 _logger.LogInformation($"    Device ID:    {_settings.DeviceID}");
                 _logger.LogInformation($"Startup OK");
             }
@@ -557,12 +570,6 @@ namespace FroniusLib
         /// <returns>Flag indicating success or failure.</returns>
         public override bool CheckAccess()
             => (GetAPIVersionAsync().Result == DataStatus.Good);
-
-        /// <summary>
-        /// Updates the client using the FroniusSettings instance.
-        /// </summary>
-        public void UpdateClient()
-            => _client.Update();
 
         #endregion
     }

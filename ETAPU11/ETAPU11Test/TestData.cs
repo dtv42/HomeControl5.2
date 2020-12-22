@@ -29,7 +29,6 @@ namespace ETAPU11Test
     {
         #region Private Data Members
 
-        private ETAPU11Settings _settings { get; }
         private readonly ETAPU11Gateway _gateway;
 
         #endregion
@@ -44,7 +43,6 @@ namespace ETAPU11Test
             // Set the default culture.
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-            _settings = fixture.Settings;
             _gateway = fixture.Gateway;
         }
 

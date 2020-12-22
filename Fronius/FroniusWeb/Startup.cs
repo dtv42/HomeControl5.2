@@ -13,10 +13,10 @@ namespace FroniusWeb
     #region Using Directives
 
     using System;
-    using System.Net.Http;
+    using System.Collections.Generic;
 
-    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;
 
     using Microsoft.Extensions.Configuration;
@@ -24,12 +24,16 @@ namespace FroniusWeb
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
-    using Polly;
-    using Polly.Extensions.Http;
+    using HealthChecks.UI.Client;
+
+    using Serilog;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using FroniusLib;
     using FroniusLib.Models;
+    using FroniusWeb.Models;
 
     #endregion Using Directives
 
@@ -39,19 +43,18 @@ namespace FroniusWeb
     public class Startup
     {
         /// <summary>
-        ///  Initializes the configuration property.
+        /// The application configuration.
         /// </summary>
-        /// <param name="configuration"></param>
+        private readonly IConfiguration _configuration;
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="Startup"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration instance.</param>
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
-
-        #region Public Properties
-
-        public IConfiguration Configuration { get; }
-
-        #endregion Public Properties
 
         /// <summary>
         ///  This method gets called by the runtime. This method adds services to the container.
@@ -59,40 +62,66 @@ namespace FroniusWeb
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions());
+            // Get application settings.
+            var settings = _configuration.GetSection("AppSettings").Get<AppSettings>();
 
-            // Adding additional services.
-            services.AddSingleton(Configuration.GetSection("AppSettings").Get<FroniusSettings>().ValidateAndThrow());
-            services.AddSingleton(Configuration.GetSection("PingSettings").Get<PingSettings>().ValidateAndThrow());
+            services
+            // Add the gateway and ping settings.
+                .AddSingleton<IPingHealthCheckOptions>(settings.PingOptions)
+                .AddSingleton<IFroniusSettings>(settings.GatewaySettings)
 
-            services.AddHttpClient<FroniusClient>()
-                .ConfigureHttpMessageHandlerBuilder(config => new HttpClientHandler
+            // Add the named gateway Http client (supporting request error policies).
+                .AddPollyHttpClient<FroniusClient>("FroniusClient",
+                    new List<TimeSpan>
+                    {
+                        TimeSpan.FromSeconds(10),
+                        TimeSpan.FromSeconds(20),
+                        TimeSpan.FromSeconds(30)
+                    },
+                    client =>
+                    {
+                        client.BaseAddress = new Uri(settings.GatewaySettings.Address);
+                        client.Timeout = TimeSpan.FromMilliseconds(settings.GatewaySettings.Timeout);
+                    });
+
+            // Add the gateway service.
+            services
+                .AddSingleton<FroniusGateway>()
+
+                // Configure health checks.
+                .AddHealthChecks()
+                    .AddProcessAllocatedMemoryHealthCheck(maximumMegabytesAllocated: 100, tags: new[] { "process", "memory" })
+                    .AddCheck<GatewayHealthCheck<FroniusGateway>>("gateway1", tags: new[] { "gateway" })
+                    .AddCheck<PingHealthCheck>("gateway2", tags: new[] { "gateway" })
+                ;
+
+            // Adding healthchecks UI configuring endpoints.
+            services
+                .AddHealthChecksUI(settings =>
                 {
-                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
+                    settings.SetHeaderText("EM300LR Gatway - Health Checks Status");
+                    settings.AddHealthCheckEndpoint("Process", "/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
                 })
-                .AddPolicyHandler(HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-                        .WaitAndRetryAsync(3, attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
+                .AddInMemoryStorage()
+                ;
 
-            services.AddSingleton<FroniusGateway>();
+            // Setup the default Json serialization options.
+            services
+                .AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions())
+                ;
 
-            // Adding Healthchecks.
-            services.AddHttpContextAccessor();
-            services.AddHealthChecks()
-                .AddCheck<StatusCheck<FroniusGateway>>("Status")
-                .AddCheck<PingCheck>("Ping");
-
-            // Adding Swagger support.
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
+            // Add Swagger support.
+            services
+                .AddSwaggerGen(c =>
                 {
-                    Title = "Fronius Gatway Web API",
-                    Description = "This is a web gateway service for a Fronius Symo 8.2-3-M solar inverter.",
-                    Version = "v1"
+                    c.SwaggerDoc("v1", new OpenApiInfo
+                    {
+                        Title = "Fronius Gateway Web API",
+                        Description = "This is a web gateway service for a Fronius Symo 8.2-3-M solar inverter.",
+                        Version = "v1"
+                    });
                 });
-            });
         }
 
         /// <summary>
@@ -102,24 +131,24 @@ namespace FroniusWeb
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.ApplicationServices.GetService<FroniusGateway>().Startup();
+            app.ApplicationServices.GetRequiredService<FroniusGateway>().Startup();
 
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseStaticFiles();
+
+            app.UseHealthChecks("/healthchecks");
+
+            app.UseSerilogRequestLogging();
+
             app.UseHttpsRedirection();
 
             app.UseRouting();
 
             app.UseAuthorization();
-
-            app.UseHealthChecks("/health", new HealthCheckOptions
-            {
-                Predicate = _ => true,
-                ResponseWriter = UIResponseWriter.WriteResponse
-            });
 
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -129,6 +158,25 @@ namespace FroniusWeb
 
             app.UseEndpoints(endpoints =>
             {
+                // adding endpoint of health check for the health check ui in UI format
+                endpoints.MapHealthChecks("/health-gateway", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("gateway"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                endpoints.MapHealthChecks("/health-process", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("process"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                // map healthcheck ui endpoint (/healthchecks-ui) and use custom style sheet.
+                endpoints.MapHealthChecksUI(setup =>
+                    {
+                        setup.AddCustomStylesheet("wwwroot/css/HealthCheck.css");
+                    });
+
                 endpoints.MapControllers();
             });
         }

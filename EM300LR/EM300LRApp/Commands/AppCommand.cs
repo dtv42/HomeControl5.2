@@ -1,4 +1,14 @@
-﻿namespace EM300LRApp.Commands
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="AppCommand.cs" company="DTV-Online">
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
+// </copyright>
+// <license>
+//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
+// </license>
+// <created>19-12-2020 17:50</created>
+// <author>Peter Trimmel</author>
+// --------------------------------------------------------------------------------------------------------------------
+namespace EM300LRApp.Commands
 {
     #region Using Directives
 
@@ -13,9 +23,9 @@
     using UtilityLib;
     using UtilityLib.Console;
 
+    using EM300LRLib;
     using EM300LRApp.Options;
     using EM300LRApp.Models;
-    using EM300LRLib;
 
     #endregion Using Directives
 
@@ -27,7 +37,11 @@
         /// Initializes a new instance of the <see cref="AppCommand"/> class.
         /// </summary>
         /// <param name="configuration">The configuration instance.</param>
+        /// <param name="gateway">The gateway instance.</param>
         /// <param name="options">The root command options.</param>
+        /// <param name="infoCommand">The info command instance.</param>
+        /// <param name="readCommand">The read command instance.</param>
+        /// <param name="monitorCommand">The monitor command instance.</param>
         /// <param name="logger">The logger instance.</param>
         public AppCommand(IConfiguration configuration,
                           EM300LRGateway gateway,

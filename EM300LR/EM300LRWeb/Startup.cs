@@ -1,11 +1,11 @@
 // --------------------------------------------------------------------------------------------------------------------
 // <copyright file="Startup.cs" company="DTV-Online">
-//   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>20-4-2020 13:22</created>
+// <created>17-12-2020 12:52</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRWeb
@@ -13,9 +13,7 @@ namespace EM300LRWeb
     #region Using Directives
 
     using System;
-    using System.Net.Http;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
+    using System.Collections.Generic;
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -26,8 +24,9 @@ namespace EM300LRWeb
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
-    using Polly;
-    using Polly.Extensions.Http;
+    using HealthChecks.UI.Client;
+
+    using Serilog;
 
     using UtilityLib;
     using UtilityLib.Webapp;
@@ -35,9 +34,6 @@ namespace EM300LRWeb
     using EM300LRLib;
     using EM300LRLib.Models;
     using EM300LRWeb.Models;
-    using System.Collections.Generic;
-    using Serilog;
-    using HealthChecks.UI.Client;
 
     #endregion Using Directives
 
@@ -121,7 +117,7 @@ namespace EM300LRWeb
                 {
                     c.SwaggerDoc("v1", new OpenApiInfo 
                     {
-                        Title = "EM300LR Gatway Web API",
+                        Title = "EM300LR Gateway Web API",
                         Description = "This is a web gateway service for a b-control EM300 LR energy meter.",
                         Version = "v1" });
                 });

@@ -1,10 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="ReadCommand.cs" company="DTV-Online">
-//   Copyright(c) 2018 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:51</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRApp.Commands
 {
@@ -84,36 +86,36 @@ namespace EM300LRApp.Commands
                     {
                         if (options.Data)
                         {
-                            console.Out.WriteLine($"Reading all data from EM300LR energy manager.");
-                            console.Out.WriteLine($"Data:");
+                            console.Out.WriteLine("Reading all data from EM300LR energy manager.");
+                            console.Out.WriteLine("Data:");
                             console.Out.WriteLine(JsonSerializer.Serialize<EM300LRData>(gateway.Data, _serializerOptions));
                         }
 
                         if (options.Total)
                         {
-                            console.Out.WriteLine($"Reading all total data from EM300LR energy manager.");
-                            console.Out.WriteLine($"Total:");
+                            console.Out.WriteLine("Reading all total data from EM300LR energy manager.");
+                            console.Out.WriteLine("Total:");
                             console.Out.WriteLine(JsonSerializer.Serialize<TotalData>(gateway.TotalData, _serializerOptions));
                         }
 
                         if (options.Phase1)
                         {
-                            console.Out.WriteLine($"Reading all phase 1 data from EM300LR energy manager.");
-                            console.Out.WriteLine($"Phase1:");
+                            console.Out.WriteLine("Reading all phase 1 data from EM300LR energy manager.");
+                            console.Out.WriteLine("Phase1:");
                             console.Out.WriteLine(JsonSerializer.Serialize<Phase1Data>(gateway.Phase1Data, _serializerOptions));
                         }
 
                         if (options.Phase2)
                         {
-                            console.Out.WriteLine($"Reading all phase 2 data from EM300LR energy manager.");
-                            console.Out.WriteLine($"Phase2:");
+                            console.Out.WriteLine("Reading all phase 2 data from EM300LR energy manager.");
+                            console.Out.WriteLine("Phase2:");
                             console.Out.WriteLine(JsonSerializer.Serialize<Phase2Data>(gateway.Phase2Data, _serializerOptions));
                         }
 
                         if (options.Phase3)
                         {
-                            console.Out.WriteLine($"Reading all phase 3 data from EM300LR energy manager.");
-                            console.Out.WriteLine($"Phase3:");
+                            console.Out.WriteLine("Reading all phase 3 data from EM300LR energy manager.");
+                            console.Out.WriteLine("Phase3:");
                             console.Out.WriteLine(JsonSerializer.Serialize<Phase3Data>(gateway.Phase3Data, _serializerOptions));
                         }
                     }
@@ -148,6 +150,7 @@ namespace EM300LRApp.Commands
                 else
                 {
                     console.Out.WriteLine($"Error reading all data from EM300LR energy manager.");
+                    return (int)ExitCodes.NotSuccessfullyCompleted;
                 }
 
                 if (options.Status)

@@ -1,10 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="FroniusController.cs" company="DTV-Online">
-//   Copyright(c) 2018 Dr. Peter Trimmel. All rights reserved.
+// <copyright file="EM300LRController.cs" company="DTV-Online">
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
-// Licensed under the MIT license. See the LICENSE file in the project root for more information.
+//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:52</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRWeb.Controllers
 {
@@ -14,7 +16,6 @@ namespace EM300LRWeb.Controllers
 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
     using Swashbuckle.AspNetCore.Annotations;
@@ -24,7 +25,6 @@ namespace EM300LRWeb.Controllers
 
     using EM300LRLib;
     using EM300LRLib.Models;
-    using EM300LRWeb.Models;
 
     #endregion Using Directives
 
@@ -48,11 +48,9 @@ namespace EM300LRWeb.Controllers
         /// Initializes a new instance of the <see cref="EM300LRController"/> class.
         /// The parameters provided by dependency injection are used to set private fields.
         /// </summary>
-        /// <param name="gateway"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
+        /// <param name="gateway">The EM300LR gateway instance.</param>
+        /// <param name="configuration">The application configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
         public EM300LRController(EM300LRGateway gateway, IConfiguration configuration, ILogger<EM300LRController> logger)
             : base(configuration, logger)
         {
@@ -110,13 +108,7 @@ namespace EM300LRWeb.Controllers
 
             return Ok(new EM300LRInfo()
             {
-                Settings = new EM300LRSettings()
-                {
-                    Address = _gateway.Settings.Address,
-                    Timeout = _gateway.Settings.Timeout,
-                    Password = _gateway.Settings.Password,
-                    SerialNumber = _gateway.Settings.SerialNumber
-                },
+                Settings = _gateway.Settings,
                 IsStartupOk = _gateway.IsStartupOk,
                 IsLocked = _gateway.IsLocked,
                 Status = _gateway.Status

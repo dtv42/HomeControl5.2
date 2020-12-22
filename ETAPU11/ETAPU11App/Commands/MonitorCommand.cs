@@ -1,91 +1,47 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="MonitorCommand.cs" company="DTV-Online">
-//   Copyright(c) 2018 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:52</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace ETAPU11App.Commands
 {
     #region Using Directives
 
     using System;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using ETAPU11Lib;
     using ETAPU11Lib.Models;
-    using ETAPU11App.Models;
+
+    using ETAPU11App.Options;
 
     #endregion
 
     /// <summary>
     /// Application command "monitor".
     /// </summary>
-    [Command(Name = "monitor",
-             FullName = "ETAPU11 Monitor Command",
-             Description = "Monitoring data values from ETA PU 11 pellet boiler.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class MonitorCommand : BaseCommand<MonitorCommand, AppSettings>
+    public class MonitorCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
         private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-        private readonly ETAPU11Gateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("-d|--data", Description = "Gets all data.")]
-        public bool Data { get; }
-
-        [Option("-b|--boiler", Description = "Gets the boiler data.")]
-        public bool Boiler { get; }
-
-        [Option("-w|--hotwater", Description = "Gets the hot water data.")]
-        public bool Hotwater { get; }
-
-        [Option("-h|--heating", Description = "Gets the heating circuit data.")]
-        public bool Heating { get; }
-
-        [Option("-s|--storage", Description = "Gets the storage data.")]
-        public bool Storage { get; }
-
-        [Option("-y|--system", Description = "Gets the system data.")]
-        public bool System { get; }
-
-        [Argument(0, Description = "Reads the named property.")]
-        public string Property { get; } = string.Empty;
-
-        [Option("--block", Description = "Using block mode read (only when reading all data).")]
-        public bool Block { get; }
-
-        [Option("--repeat", Description = "The number of iterations (default: forever).")]
-        public uint Repeat { get; private set; } = 0;
-
-        [Option("--interval", Description = "The seconds between times to read (default: 10).")]
-        public uint Interval { get; } = 10;
 
         #endregion
 
@@ -95,376 +51,274 @@ namespace ETAPU11App.Commands
         /// Initializes a new instance of the <see cref="MonitorCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public MonitorCommand(ETAPU11Gateway gateway,
-                              IConsole console,
-                              AppSettings settings,
-                              IConfiguration config,
-                              IHostEnvironment environment,
-                              IHostApplicationLifetime lifetime,
-                              ILogger<MonitorCommand> logger,
-                              CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        public MonitorCommand(ETAPU11Gateway gateway, ILogger<ReadCommand> logger)
+            : base(logger, "monitor", "Monitoring data values from an ETA PU 11 pellet boiler.")
         {
             _logger?.LogDebug("MonitorCommand()");
 
-            // Setting the ETAPU11 instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
 
-        #endregion
+            AddOption(new Option<bool>(new string[] { "-d", "--data"     }, "Monitors all data"));
+            AddOption(new Option<bool>(new string[] { "-b", "--boiler"   }, "Monitors the boiler data."));
+            AddOption(new Option<bool>(new string[] { "-w", "--water"    }, "Monitors the hot water data."));
+            AddOption(new Option<bool>(new string[] { "-c", "--circuit"  }, "Monitors the heating circuit data."));
+            AddOption(new Option<bool>(new string[] { "-s", "--storage"  }, "Monitors the pellets storage data."));
+            AddOption(new Option<bool>(new string[] { "-y", "--system"   }, "Monitors the system info data."));
+            AddOption(new Option<bool>("--blockmode", "Using block mode read (only used when reading all data)."));
+            AddOption(new Option<uint>("--repeat", "The number of iterations (default: forever)."));
+            AddOption(new Option<uint>("--interval", "The seconds between times to read (default: 10)."));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public async Task<int> OnExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (!(Parent is null))
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, CancellationToken, GlobalOptions, MonitorOptions>
+                (async (console, token, globals, options) =>
             {
-                // Overriding ETAPU11 options.
-                _gateway.Settings.TcpSlave.Address = Parent.Address;
-                _gateway.Settings.TcpSlave.Port = Parent.Port;
-                _gateway.Settings.TcpSlave.ID = Parent.SlaveID;
-                _gateway.UpdateClient();
-            }
+                logger.LogDebug("Handler()");
 
-            if (Parent?.ShowSettings ?? false)
-            {
-                _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-            }
+                if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
 
-            try
-            {
-                bool forever = (Repeat == 0);
-                bool verbose = true;
-
-                await Task.Factory.StartNew(async () =>
+                if (globals.Verbose)
                 {
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        // Read the specified data.
-                        var start = DateTime.UtcNow;
-                        ReadingData(verbose);
-                        // Only first call is verbose.
-                        verbose = false;
-                        var end = DateTime.UtcNow;
-                        double delay = ((Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+                    console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                    console.Out.WriteLine($"Slave Address: {globals.TcpSlave.Address}");
+                    console.Out.WriteLine($"Slave Port:    {globals.TcpSlave.Port}");
+                    console.Out.WriteLine($"Slave ID:      {globals.TcpSlave.ID}");
+                    console.Out.WriteLine();
+                }
 
-                        if (Interval > 0)
+                try
+                {
+                    bool forever = (options.Repeat == 0);
+                    bool header = true;
+
+                    await Task.Factory.StartNew(async () =>
+                    {
+                        while (!token.IsCancellationRequested)
                         {
-                            if (delay < 0)
+                            // Read the specified data.
+                            var start = DateTime.UtcNow;
+
+                            console.Out.WriteLine(start.ToLongTimeString());
+
+                            ReadingData(console, gateway, options, header);
+
+                            // Only first call is showing the header.
+                            header = false;
+                            var end = DateTime.UtcNow;
+                            var elapsed = (end - start).TotalMilliseconds;
+                            double delay = ((options.Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+
+                            console.Out.WriteLine($"Elapsed time: {(elapsed / 1000.0):F2}");
+
+                            if (options.Interval > 0)
                             {
-                                _logger?.LogWarning($"Monitoring: no time between reads (duration: {((end - start).TotalMilliseconds / 1000.0):F2}).");
+                                if (delay < 0)
+                                {
+                                    console.YellowWriteLine("Monitoring: no time between reads.");
+                                }
+                                else
+                                {
+                                    await Task.Delay(TimeSpan.FromSeconds(delay), token);
+                                }
                             }
-                            else
+
+                            if (!forever && (--options.Repeat <= 0))
                             {
-                                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
+                                _closing.Set();
+                                break;
                             }
                         }
+                    }, token);
 
-                        if (!forever && (--Repeat <= 0))
-                        {
-                            _closing.Set();
-                            break;
-                        }
-                    }
+                    Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        _closing.Set();
+                    });
 
-                }, cancellationToken);
-
-                _console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
+                    _closing.WaitOne();
+                }
+                catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
                 {
-                    _console.WriteLine($"Monitoring cancelled.");
-                    _closing.Set();
-                });
+                    console.Out.WriteLine($"Monitoring cancelled.");
+                    return (int)ExitCodes.OperationCanceled;
+                }
+                catch (OperationCanceledException)
+                {
+                    console.Out.WriteLine($"Monitoring cancelled.");
+                    return (int)ExitCodes.OperationCanceled;
+                }
+                catch (Exception)
+                {
+                    console.Out.WriteLine($"Monitoring exception.");
+                    return (int)ExitCodes.OperationCanceled;
+                }
 
-                _closing.WaitOne();
-            }
-            catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-            }
-            catch (OperationCanceledException)
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-                throw;
-            }
-            catch
-            {
-                _logger.LogError("MonitorCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
+                return (int)ExitCodes.SuccessfullyCompleted;
+            });
         }
 
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Data) ++options;
-                if (Boiler) ++options;
-                if (Hotwater) ++options;
-                if (Heating) ++options;
-                if (Storage) ++options;
-                if (System) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    return false;
-                }
-
-                if (Block && !Data)
-                {
-                    _console.WriteLine("Block read option is ignored.");
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        if (!typeof(ETAPU11Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Boiler)
-                    {
-                        if (!typeof(BoilerData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Hotwater)
-                    {
-                        if (!typeof(HotwaterData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Heating)
-                    {
-                        if (!typeof(HeatingData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Storage)
-                    {
-                        if (!typeof(StorageData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (System)
-                    {
-                        if (!typeof(SystemData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (!ETAPU11Data.IsReadable(Property))
-                    {
-                        _logger?.LogError($"The property '{Property}' is not readable.");
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        #endregion
+        #endregion Constructors
 
         #region Private Methods
 
         /// <summary>
         /// Reading the specified data.
         /// </summary>
-        private void ReadingData(bool verbose = false)
+        private void ReadingData(IConsole console, ETAPU11Gateway gateway, MonitorOptions options, bool header = false)
         {
-            if (string.IsNullOrEmpty(Property))
+            if (string.IsNullOrEmpty(options.Name))
             {
-                if (Data)
+                if (options.Data)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring ETAPU11 data.");
+                    if (header) console.Out.WriteLine($"Monitoring ETAPU11 data.");
                     DataStatus status;
 
-                    if (Block)
+                    if (options.Blockmode)
                     {
-                        status = _gateway.ReadBlockAll();
+                        status = gateway.ReadBlockAll();
                     }
                     else
                     {
-                        status = _gateway.ReadAll();
+                        status = gateway.ReadAll();
                     }
 
                     if (status.IsGood)
                     {
                         // Fix: Json Serializer cannot serialize NaN
-                        if (double.IsNaN(_gateway.Data.Flow)) _gateway.Data.Flow = 0;
-                        if (double.IsNaN(_gateway.Data.ResidualO2)) _gateway.Data.ResidualO2 = 0;
+                        if (double.IsNaN(gateway.Data.Flow)) gateway.Data.Flow = 0;
+                        if (double.IsNaN(gateway.Data.ResidualO2)) gateway.Data.ResidualO2 = 0;
 
-                        _console.WriteLine(JsonSerializer.Serialize<ETAPU11Data>(_gateway.Data, _options));
+                        console.Out.WriteLine(JsonSerializer.Serialize<ETAPU11Data>(gateway.Data, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading boiler data from ETAPU11 pellet boiler.");
+                        console.Out.WriteLine($"Error reading boiler data from ETAPU11 pellet boiler.");
                     }
                 }
 
-                if (Boiler)
+                if (options.Boiler)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring boiler data.");
-                    DataStatus status = _gateway.ReadBoilerData();
+                    if (header) console.Out.WriteLine($"Monitoring boiler data.");
+                    DataStatus status = gateway.ReadBoilerData();
 
                     if (status.IsGood)
                     {
                         // Fix: Json Serializer cannot serialize NaN
-                        if (double.IsNaN(_gateway.Data.ResidualO2)) _gateway.Data.ResidualO2 = 0;
+                        if (double.IsNaN(gateway.Data.ResidualO2)) gateway.Data.ResidualO2 = 0;
 
-                        _console.WriteLine(JsonSerializer.Serialize<BoilerData>(_gateway.BoilerData, _options));
+                        console.Out.WriteLine(JsonSerializer.Serialize<BoilerData>(gateway.BoilerData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading boiler data from ETAPU11 pellet boiler.");
+                        console.Out.WriteLine($"Error reading boiler data from ETAPU11 pellet boiler.");
                     }
                 }
 
-                if (Hotwater)
+                if (options.Water)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring hotwater data.");
-                    DataStatus status = _gateway.ReadHotwaterData();
+                    if (header) console.Out.WriteLine($"Monitoring hotwater data.");
+                    DataStatus status = gateway.ReadHotwaterData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine(JsonSerializer.Serialize<HotwaterData>(_gateway.HotwaterData, _options));
+                        console.Out.WriteLine(JsonSerializer.Serialize<HotwaterData>(gateway.HotwaterData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading hotwater data from ETAPU11 pellet boiler.");
+                        console.Out.WriteLine($"Error reading hotwater data from ETAPU11 pellet boiler.");
                     }
                 }
 
-                if (Heating)
+                if (options.Circuit)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring heating data.");
-                    DataStatus status = _gateway.ReadHeatingData();
+                    if (header) console.Out.WriteLine($"Monitoring heating data.");
+                    DataStatus status = gateway.ReadHeatingData();
 
                     if (status.IsGood)
                     {
                         // Fix: Json Serializer cannot serialize NaN
-                        if (double.IsNaN(_gateway.Data.Flow)) _gateway.Data.Flow = 0;
+                        if (double.IsNaN(gateway.Data.Flow)) gateway.Data.Flow = 0;
 
-                        _console.WriteLine(JsonSerializer.Serialize<HeatingData>(_gateway.HeatingData, _options));
+                        console.Out.WriteLine(JsonSerializer.Serialize<HeatingData>(gateway.HeatingData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading heating data from ETAPU11 pellet boiler.");
+                        console.Out.WriteLine($"Error reading heating data from ETAPU11 pellet boiler.");
                     }
                 }
 
-                if (Storage)
+                if (options.Storage)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring storage data.");
-                    DataStatus status = _gateway.ReadBoilerData();
+                    if (header) console.Out.WriteLine($"Monitoring storage data.");
+                    DataStatus status = gateway.ReadBoilerData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine(JsonSerializer.Serialize<StorageData>(_gateway.StorageData, _options));
+                        console.Out.WriteLine(JsonSerializer.Serialize<StorageData>(gateway.StorageData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading storage data from ETAPU11 pellet boiler.");
+                        console.Out.WriteLine($"Error reading storage data from ETAPU11 pellet boiler.");
                     }
                 }
 
-                if (System)
+                if (options.System)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring system data.");
-                    DataStatus status = _gateway.ReadBoilerData();
+                    if (header) console.Out.WriteLine($"Monitoring system data.");
+                    DataStatus status = gateway.ReadBoilerData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine(JsonSerializer.Serialize<SystemData>(_gateway.SystemData, _options));
+                        console.Out.WriteLine(JsonSerializer.Serialize<SystemData>(gateway.SystemData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading system data from ETAPU11 pellet boiler.");
+                        console.Out.WriteLine($"Error reading system data from ETAPU11 pellet boiler.");
                     }
                 }
             }
             else
             {
-                if (verbose) _console.WriteLine($"Monitoring property '{Property}':");
-                var status = _gateway.ReadProperty(Property);
+                if (header) console.Out.WriteLine($"Monitoring property '{options.Name}':");
+                var status = gateway.ReadProperty(options.Name);
 
                 if (status.IsGood)
                 {
-                    if (Data)
+                    if (options.Data)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Data.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Data.GetPropertyValue(options.Name)}");
                     }
 
-                    if (Boiler)
+                    if (options.Boiler)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.BoilerData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.BoilerData.GetPropertyValue(options.Name)}");
                     }
                     
-                    if (Hotwater)
+                    if (options.Water)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.HotwaterData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.HotwaterData.GetPropertyValue(options.Name)}");
                     }
                     
-                    if (Heating)
+                    if (options.Circuit)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.HeatingData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.HeatingData.GetPropertyValue(options.Name)}");
                     }
                     
-                    if (Storage)
+                    if (options.Storage)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.StorageData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.StorageData.GetPropertyValue(options.Name)}");
                     }
                     
-                    if (System)
+                    if (options.System)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.SystemData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.SystemData.GetPropertyValue(options.Name)}");
                     }
                 }
                 else
                 {
-                    _console.WriteLine($"Error reading property '{Property}' from ETAPU11 pellet boiler.");
+                    console.Out.WriteLine($"Error reading property '{options.Name}' from ETAPU11 pellet boiler.");
                 }
             }
         }

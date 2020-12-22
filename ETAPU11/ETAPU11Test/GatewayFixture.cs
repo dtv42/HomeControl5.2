@@ -51,7 +51,6 @@ namespace ETAPU11Test
             var loggerFactory = new LoggerFactory();
 
             var client = new ETAPU11Client(new TcpModbusClient(Settings),
-                                           Settings,
                                            loggerFactory.CreateLogger<ETAPU11Client>());
 
             Gateway = new ETAPU11Gateway(client,

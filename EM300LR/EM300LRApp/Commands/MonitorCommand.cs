@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="MonitorCommand.cs" company="DTV-Online">
-//   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>22-4-2020 17:19</created>
+// <created>17-12-2020 12:51</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRApp.Commands
@@ -65,8 +65,8 @@ namespace EM300LRApp.Commands
             AddOption(new Option<bool>(new string[] { "-1", "--phase1"   }, "Monitors the phase 1 data"));
             AddOption(new Option<bool>(new string[] { "-2", "--phase2"   }, "Monitors the phase 2 data"));
             AddOption(new Option<bool>(new string[] { "-3", "--phase3"   }, "Monitors the phase 3 data"));
-            AddOption(new Option<uint>(new string[] { "-r", "--repeat"   }, "The number of iterations (default: forever)."));
-            AddOption(new Option<uint>(new string[] { "-i", "--interval" }, "The seconds between times to read (default: 10)."));
+            AddOption(new Option<uint>("--repeat", "The number of iterations (default: forever)."));
+            AddOption(new Option<uint>("--interval", "The seconds between times to read (default: 10)."));
 
             // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, CancellationToken, GlobalOptions, MonitorOptions>

@@ -1,22 +1,22 @@
 // --------------------------------------------------------------------------------------------------------------------
 // <copyright file="Startup.cs" company="DTV-Online">
-//   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>20-4-2020 13:22</created>
+// <created>17-12-2020 12:52</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace ETAPU11Web
 {
     #region Using Directives
 
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
+    using System;
+    using System.Collections.Generic;
 
-    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;
 
     using Microsoft.Extensions.Configuration;
@@ -24,11 +24,18 @@ namespace ETAPU11Web
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
-    using ModbusLib;
-    using ModbusLib.Models;
+    using HealthChecks.UI.Client;
+
+    using Serilog;
+
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using ETAPU11Lib;
     using ETAPU11Lib.Models;
+    using ETAPU11Web.Models;
+    using ModbusLib;
+    using ModbusLib.Models;
 
     #endregion Using Directives
 
@@ -38,19 +45,18 @@ namespace ETAPU11Web
     public class Startup
     {
         /// <summary>
-        ///  Initializes the configuration property.
+        /// The application configuration.
         /// </summary>
-        /// <param name="configuration"></param>
+        private readonly IConfiguration _configuration;
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="Startup"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration instance.</param>
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
-
-        #region Public Properties
-
-        public IConfiguration Configuration { get; }
-
-        #endregion Public Properties
 
         /// <summary>
         ///  This method gets called by the runtime. This method adds services to the container.
@@ -58,33 +64,56 @@ namespace ETAPU11Web
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions());
+            // Get application settings.
+            var settings = _configuration.GetSection("AppSettings").Get<AppSettings>();
 
-            // Adding additional services.
-            services.AddSingleton(Configuration.GetSection("PingSettings").Get<PingSettings>().ValidateAndThrow());
-            var settings = Configuration.GetSection("AppSettings").Get<ETAPU11Settings>().ValidateAndThrow();
-            services.AddSingleton(settings);
-            services.AddSingleton((ITcpClientSettings)settings);
-            services.AddSingleton<TcpModbusClient>();
-            services.AddSingleton<ETAPU11Client>();
-            services.AddSingleton<ETAPU11Gateway>();
+            services
+            // Add the gateway and ping settings.
+                .AddSingleton<IPingHealthCheckOptions>(settings.PingOptions)
+                .AddSingleton((ITcpClientSettings)settings.GatewaySettings)
+                .AddSingleton<IETAPU11Settings>(settings.GatewaySettings)
 
-            // Adding Healthchecks.
-            services.AddHttpContextAccessor();
-            services.AddHealthChecks()
-                .AddCheck<StatusCheck<ETAPU11Gateway>>("Status")
-                .AddCheck<PingCheck>("Ping");
+            // Add the custom gateway ModbusTcp client.
+                .AddSingleton<TcpModbusClient>()
+                .AddSingleton<ETAPU11Client>()
 
-            // Adding Swagger support.
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
+            // Add the gateway service.
+                .AddSingleton<ETAPU11Gateway>()
+
+            // Configure health checks.
+                .AddHealthChecks()
+                    .AddProcessAllocatedMemoryHealthCheck(maximumMegabytesAllocated: 100, tags: new[] { "process", "memory" })
+                    .AddCheck<GatewayHealthCheck<ETAPU11Gateway>>("gateway1", tags: new[] { "gateway" })
+                    .AddCheck<PingHealthCheck>("gateway2", tags: new[] { "gateway" })
+                ;
+
+            // Adding healthchecks UI configuring endpoints.
+            services
+                .AddHealthChecksUI(settings =>
                 {
-                    Title = "ETAPU11 Gatway Web API",
-                    Description = "This is a web gateway service for a ETA PU 11 pellet boiler.",
-                    Version = "v1"
+                    settings.SetHeaderText("ETAPU11 Gateway - Health Checks Status");
+                    settings.AddHealthCheckEndpoint("Process", "/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                })
+                .AddInMemoryStorage()
+                ;
+
+            // Setup the default Json serialization options.
+            services
+                .AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions())
+                ;
+
+            // Add Swagger support.
+            services
+                .AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo
+                    {
+                        Title = "ETAPU11 Gateway Web API",
+                        Description = "This is a web gateway service for a ETA PU 11 pellet boiler.",
+                        Version = "v1"
+                    });
                 });
-            });
         }
 
         /// <summary>
@@ -94,12 +123,18 @@ namespace ETAPU11Web
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.ApplicationServices.GetService<ETAPU11Gateway>().Startup();
+            app.ApplicationServices.GetRequiredService<ETAPU11Gateway>().Startup();
 
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseStaticFiles();
+
+            app.UseHealthChecks("/healthchecks");
+
+            app.UseSerilogRequestLogging();
 
             app.UseHttpsRedirection();
 
@@ -107,20 +142,33 @@ namespace ETAPU11Web
 
             app.UseAuthorization();
 
-            app.UseHealthChecks("/health", new HealthCheckOptions
-            {
-                Predicate = _ => true,
-                ResponseWriter = UIResponseWriter.WriteResponse
-            });
-
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "ETAPU11 Gateway API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "EM300LR Gateway API V1");
             });
 
             app.UseEndpoints(endpoints =>
             {
+                // adding endpoint of health check for the health check ui in UI format
+                endpoints.MapHealthChecks("/health-gateway", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("gateway"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                endpoints.MapHealthChecks("/health-process", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("process"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                // map healthcheck ui endpoint (/healthchecks-ui) and use custom style sheet.
+                endpoints.MapHealthChecksUI(setup =>
+                {
+                    setup.AddCustomStylesheet("wwwroot/css/HealthCheck.css");
+                });
+
                 endpoints.MapControllers();
             });
         }

@@ -10,6 +10,8 @@ namespace FroniusWeb.Models
 {
     #region Using Directives
 
+    using UtilityLib.Webapp;
+
     using FroniusLib.Models;
 
     #endregion Using Directives
@@ -17,7 +19,9 @@ namespace FroniusWeb.Models
     /// <summary>
     /// Only the Fronius settings from <see cref="FroniusLib.Models.FroniusSettings"/> are used here. 
     /// </summary>
-    public class AppSettings : FroniusSettings
+    public class AppSettings
     {
+        public FroniusSettings GatewaySettings { get; set; } = new FroniusSettings();
+        public PingHealthCheckOptions PingOptions { get; set; } = new PingHealthCheckOptions();
     }
 }

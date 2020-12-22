@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="GatewayFixture.cs" company="DTV-Online">
-//   Copyright(c) 2020 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>22-4-2020 17:02</created>
+// <created>17-12-2020 12:51</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRTest
@@ -50,7 +50,11 @@ namespace EM300LRTest
 
             configuration.GetSection("AppSettings").Bind(Settings);
 
-            var client = new EM300LRClient(new HttpClient(),
+            var client = new EM300LRClient(new HttpClient()
+                                           {
+                                               BaseAddress = new Uri(Settings.Address),
+                                               Timeout = TimeSpan.FromMilliseconds(Settings.Timeout)
+                                           },
                                            loggerFactory.CreateLogger<EM300LRClient>());
 
             Gateway = new EM300LRGateway(client,

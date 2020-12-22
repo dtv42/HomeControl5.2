@@ -1,16 +1,17 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="EM300LRClient.cs" company="DTV-Online">
-//   Copyright(c) 2019 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:51</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRLib
 {
     #region Using Directives
 
-    using System;
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
@@ -18,7 +19,6 @@ namespace EM300LRLib
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
-    using EM300LRLib.Models;
 
     #endregion Using Directives
 
@@ -40,8 +40,7 @@ namespace EM300LRLib
         /// </summary>
         /// <param name="client"></param>
         /// <param name="logger"></param>
-        public EM300LRClient(HttpClient client,
-                             ILogger<EM300LRClient> logger)
+        public EM300LRClient(HttpClient client, ILogger<EM300LRClient> logger)
             : base(logger)
         {
             _logger?.LogDebug($"EM300LRClient()");

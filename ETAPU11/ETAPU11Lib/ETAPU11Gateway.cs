@@ -1,10 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ETAPU11.cs" company="DTV-Online">
-//   Copyright(c) 2018 Dr. Peter Trimmel. All rights reserved.
+// <copyright file="ETAPU11Gateway.cs" company="DTV-Online">
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
-// Licensed under the MIT license. See the LICENSE file in the project root for more information.
+//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:52</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace ETAPU11Lib
 {
@@ -23,6 +25,8 @@ namespace ETAPU11Lib
     using NModbus;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using ETAPU11Lib.Models;
     using static ETAPU11Lib.Models.ETAPU11Data;
 
@@ -33,7 +37,7 @@ namespace ETAPU11Lib
     /// The value properties are based on the specification ETAtouch Modbus/TCP interface
     /// Version 1.0 ETA Heiztechnik GmbH February 25, 2014
     /// </summary>
-    public class ETAPU11Gateway : BaseGateway<ETAPU11Settings>
+    public class ETAPU11Gateway : BaseGateway
     {
         #region Private Fields
 
@@ -41,6 +45,11 @@ namespace ETAPU11Lib
         /// The Modbus TCP/IP client instance.
         /// </summary>
         private readonly ETAPU11Client _client;
+
+        /// <summary>
+        /// The EM300LR client settings.
+        /// </summary>
+        private readonly ETAPU11Settings _settings;
 
         #endregion Private Fields
 
@@ -100,15 +109,20 @@ namespace ETAPU11Lib
         /// Initializes a new instance of the <see cref="ETAPU11Gateway"/> class.
         /// </summary>
         /// <param name="client">The custom Modbus TCP client.</param>
+        /// <param name="settings">The ETAPU11 settings.</param>
         /// <param name="logger">The application logger instance.</param>
-        /// <param name="options">The settings options.</param>
         public ETAPU11Gateway(ETAPU11Client client,
-                              ETAPU11Settings settings,
+                              IETAPU11Settings settings,
                               ILogger<ETAPU11Gateway> logger)
-            : base(settings, logger)
+            : base(logger)
         {
             _logger?.LogDebug($"ETAPU11Gateway()");
 
+            _settings = new ETAPU11Settings
+            {
+                TcpMaster = settings.TcpMaster,
+                TcpSlave = settings.TcpSlave
+            };
             _client = client;
         }
 
@@ -609,7 +623,7 @@ namespace ETAPU11Lib
                                     Data.SetPropertyValue(property, doubleData);
                                     Status = await WritePropertyAsync(Data, property);
                                     break;
-                                case UInt32 u when UInt32.TryParse(data, out UInt32 uint32Data):
+                                case uint when uint.TryParse(data, out uint uint32Data):
                                     Data.SetPropertyValue(property, uint32Data);
                                     Status = await WritePropertyAsync(Data, property);
                                     break;
@@ -801,12 +815,6 @@ namespace ETAPU11Lib
             return false;
         }
 
-        /// <summary>
-        /// Updates the client using the EM300LRSettings instance.
-        /// </summary>
-        public void UpdateClient()
-            => _client.Update();
-
         #endregion Public Methods
 
         #region Private Methods
@@ -840,7 +848,7 @@ namespace ETAPU11Lib
                             data.SetPropertyValue(property, data.GetDoubleValue(property, intvalue));
                             _logger?.LogDebug($"ReadAsync property '{property}' => Value: {intvalue}.");
                         }
-                        else if (value is UInt32)
+                        else if (value is uint)
                         {
                             var intvalue = await _client.ReadUInt32Async(offset);
                             data.SetPropertyValue(property, intvalue);
@@ -952,33 +960,44 @@ namespace ETAPU11Lib
 
                     if (!(value is null))
                     {
-                        if (value is double)
+                        switch (value)
                         {
-                            _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
-                            uint intvalue = data.GetUInt32Value(property, (double)value);
-                            await _client.WriteUInt32Async(offset, intvalue);
-                        }
-                        else if (value is UInt32)
-                        {
-                            _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
-                            await _client.WriteUInt32Async(offset, (UInt32)value);
-                        }
-                        else if (value is TimeSpan)
-                        {
-                            _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
-                            uint intvalue = data.GetUInt32Value(property, (TimeSpan)value);
-                            await _client.WriteUInt32Async(offset, intvalue);
-                        }
-                        else if (value is DateTimeOffset)
-                        {
-                            _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
-                            uint intvalue = data.GetUInt32Value(property, (int)((DateTimeOffset)value).ToUnixTimeSeconds());
-                            await _client.WriteUInt32Async(offset, intvalue);
-                        }
-                        else if (value.GetType().IsEnum)
-                        {
-                            _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
-                            await _client.WriteUInt32Async(offset, (uint)value);
+                            case double:
+                                {
+                                    _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
+                                    uint intvalue = data.GetUInt32Value(property, (double)value);
+                                    await _client.WriteUInt32Async(offset, intvalue);
+                                    break;
+                                }
+
+                            case uint:
+                                _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
+                                await _client.WriteUInt32Async(offset, (uint)value);
+                                break;
+                            case TimeSpan:
+                                {
+                                    _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
+                                    uint intvalue = data.GetUInt32Value(property, (TimeSpan)value);
+                                    await _client.WriteUInt32Async(offset, intvalue);
+                                    break;
+                                }
+
+                            case DateTimeOffset:
+                                {
+                                    _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
+                                    uint intvalue = data.GetUInt32Value(property, (int)((DateTimeOffset)value).ToUnixTimeSeconds());
+                                    await _client.WriteUInt32Async(offset, intvalue);
+                                    break;
+                                }
+
+                            default:
+                                if (value.GetType().IsEnum)
+                                {
+                                    _logger?.LogDebug($"WriteAsync property '{property}' => Type: {value.GetType()}, Value: {value}, Offset: {offset}, Length: {length}.");
+                                    await _client.WriteUInt32Async(offset, (uint)value);
+                                }
+
+                                break;
                         }
                     }
                     else

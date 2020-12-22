@@ -5,7 +5,7 @@
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
-// <created>10-12-2020 16:19</created>
+// <created>19-12-2020 17:54</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRApp.Options

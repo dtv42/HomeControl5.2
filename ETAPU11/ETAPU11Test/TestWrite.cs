@@ -42,7 +42,6 @@ namespace ETAPU11Test
 
             _gateway = fixture.Gateway;
             _gateway.Settings.TcpSlave.Address = "127.0.0.1";
-            _gateway.UpdateClient();
         }
 
         [Theory]

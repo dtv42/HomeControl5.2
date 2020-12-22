@@ -10,6 +10,8 @@ namespace FroniusLib.Models
 {
     #region Using Directives
 
+    using System.ComponentModel.DataAnnotations;
+
     using UtilityLib;
 
     #endregion Using Directives
@@ -17,8 +19,20 @@ namespace FroniusLib.Models
     /// <summary>
     /// Class holding all Fronius settings (device ID).
     /// </summary>
-    public class FroniusSettings : HttpClientSettings
+    public class FroniusSettings : IFroniusSettings
     {
+        /// <summary>
+        /// The Http client base address.
+        /// </summary>
+        [Uri]
+        public string Address { get; set; } = "http://localhost";
+
+        /// <summary>
+        /// The Http client timeout (msec).
+        /// </summary>
+        [Range(0, int.MaxValue)]
+        public int Timeout { get; set; } = 5000;
+
         /// <summary>
         /// The Fronius settings;
         /// </summary>

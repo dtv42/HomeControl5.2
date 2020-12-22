@@ -28,7 +28,7 @@ namespace FroniusTest
         public FroniusGateway Gateway { get; }
         public FroniusSettings Settings { get; private set; } = new FroniusSettings()
         {
-            BaseAddress = "http://10.0.1.6",
+            Address = "http://10.0.1.6",
             DeviceID = "1"
         };
 
@@ -42,8 +42,11 @@ namespace FroniusTest
 
             var loggerFactory = new LoggerFactory();
 
-            var client = new FroniusClient(new HttpClient(),
-                                           Settings,
+            var client = new FroniusClient(new HttpClient()
+                                           {
+                                                BaseAddress = new Uri(Settings.Address),
+                                                Timeout = TimeSpan.FromMilliseconds(Settings.Timeout)
+                                           },
                                            loggerFactory.CreateLogger<FroniusClient>());
 
             Gateway = new FroniusGateway(client,

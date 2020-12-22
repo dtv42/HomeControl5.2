@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "FroniusApp": {
+      "commandName": "Project",
+      "commandLineArgs": "--verbose"
+    }
+  }
+}

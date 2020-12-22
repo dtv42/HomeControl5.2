@@ -1,10 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="EM300LRGateway.cs" company="DTV-Online">
-//   Copyright(c) 2019 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
 //   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:51</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace EM300LRLib
 {
@@ -41,7 +43,7 @@ namespace EM300LRLib
         /// <summary>
         /// The EM300LR client settings.
         /// </summary>
-        private readonly IEM300LRSettings _settings;
+        private readonly EM300LRSettings _settings;
 
         /// <summary>
         /// The custom JSON serializer options.
@@ -55,7 +57,7 @@ namespace EM300LRLib
         /// <summary>
         /// Gets the EM300LR settings.
         /// </summary>
-        public IEM300LRSettings Settings { get => _settings; }
+        public EM300LRSettings Settings { get => _settings; }
 
         /// <summary>
         /// Indicates startup completed.
@@ -111,7 +113,14 @@ namespace EM300LRLib
             _logger?.LogDebug($"EM300LRGateway()");
 
             _serializerOptions.Converters.Add(new NumberConverter());
-            _settings = settings;
+            _settings = new EM300LRSettings()
+            {
+                Address = settings.Address,
+                Timeout = settings.Timeout,
+                Password = settings.Password,
+                SerialNumber = settings.SerialNumber
+            };
+
             _client = client;
         }
 

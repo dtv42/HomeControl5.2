@@ -1,4 +1,14 @@
-﻿namespace ETAPU11Lib
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ETAPU11Client.cs" company="DTV-Online">
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
+// </copyright>
+// <license>
+//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
+// </license>
+// <created>17-12-2020 12:52</created>
+// <author>Peter Trimmel</author>
+// --------------------------------------------------------------------------------------------------------------------
+namespace ETAPU11Lib
 {
     #region Using Directives
 
@@ -7,13 +17,15 @@
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+
     using ModbusLib;
     using ModbusLib.Models;
+
     using ETAPU11Lib.Models;
 
     #endregion
 
-    public class ETAPU11Client : BaseClass<TcpClientSettings>
+    public class ETAPU11Client : BaseClass
     {
         #region Private Data Members
 
@@ -25,11 +37,6 @@
         #endregion Private Data Members
 
         #region Public Properties
-
-        /// <summary>
-        /// Gets the Modbus client settings.
-        /// </summary>
-        public TcpClientSettings Settings { get => _settings; }
 
         /// <summary>
         /// Get the connected state from the Modbus TCP client.
@@ -45,31 +52,17 @@
         /// </summary>
         /// <param name="client"></param>
         /// <param name="logger"></param>
-        /// <param name="options"></param>
-        public ETAPU11Client(TcpModbusClient client,
-                             ETAPU11Settings settings,
-                             ILogger<ETAPU11Client> logger)
-            : base(settings, logger)
+        public ETAPU11Client(TcpModbusClient client, ILogger<ETAPU11Client> logger)
+            : base(logger)
         {
             _logger?.LogDebug($"ETAPU11Client()");
 
             _client = client;
-
-            Update();
         }
 
         #endregion Constructors
 
         #region Public Methods
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public void Update()
-        {
-            _client.TcpMaster = _settings.TcpMaster;
-            _client.TcpSlave = _settings.TcpSlave;
-        }
 
         // Redirect all methods to embedded client.
 

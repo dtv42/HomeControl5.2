@@ -13,79 +13,35 @@ namespace FroniusApp.Commands
     #region Using Directives
 
     using System;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using FroniusLib;
     using FroniusLib.Models;
 
-    using FroniusApp.Models;
+    using FroniusApp.Options;
 
     #endregion
 
     /// <summary>
     /// Application command "monitor".
     /// </summary>
-    [Command(Name = "monitor",
-             FullName = "Fronius Monitor Command",
-             Description = "Monitoring data values from Fronius Symo 8.2-3-M solar inverter.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class MonitorCommand : BaseCommand<MonitorCommand, AppSettings>
+    public class MonitorCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
         private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-        private readonly FroniusGateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("-d|--data", Description = "Reads all data.")]
-        public bool Data { get; }
-
-        [Option("-c|--common", Description = "Get the inverter common data.")]
-        public bool Common { get; }
-
-        [Option("-i|--inverter", Description = "Get the inverter info.")]
-        public bool Inverter { get; }
-
-        [Option("-l|--logger", Description = "Get the data logger info.")]
-        public bool Logger { get; }
-
-        [Option("-m|--minmax", Description = "Get the inverter minmax data.")]
-        public bool MinMax { get; }
-
-        [Option("-p|--phase", Description = "Get the inverter phase data.")]
-        public bool Phase { get; }
-
-        [Argument(0, Description = "Monitors the named property.")]
-        public string Property { get; } = string.Empty;
-
-        [Option("--repeat", Description = "The number of iterations (default: forever).")]
-        public uint Repeat { get; set; } = 0;
-
-        [Option("--interval", Description = "The seconds between times to read (default: 10).")]
-        public uint Seconds { get; set; } = 10;
 
         #endregion
 
@@ -95,396 +51,305 @@ namespace FroniusApp.Commands
         /// Initializes a new instance of the <see cref="MonitorCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public MonitorCommand(FroniusGateway gateway,
-                              IConsole console,
-                              AppSettings settings,
-                              IConfiguration config,
-                              IHostEnvironment environment,
-                              IHostApplicationLifetime lifetime,
-                              ILogger<MonitorCommand> logger,
-                              CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        public MonitorCommand(FroniusGateway gateway, ILogger<ReadCommand> logger)
+            : base(logger, "monitor", "Monitoring data info from Fronius Symo 8.2-3-M solar inverter.")
         {
             _logger?.LogDebug("MonitorCommand()");
 
-            // Setting the Fronius instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
 
-        #endregion
+            AddOption(new Option<bool>(new string[] { "-d", "--data"     }, "Monitors all data"));
+            AddOption(new Option<bool>(new string[] { "-c", "--common"   }, "Monitors the inverter common data"));
+            AddOption(new Option<bool>(new string[] { "-i", "--inverter" }, "Monitors the inverter info data"));
+            AddOption(new Option<bool>(new string[] { "-m", "--minmax"   }, "Monitors the inverter minmax data"));
+            AddOption(new Option<bool>(new string[] { "-p", "--phase"    }, "Monitors the inverter phase data"));
+            AddOption(new Option<bool>(new string[] { "-l", "--logger"   }, "Monitors the logger info data"));
+            AddOption(new Option<uint>("--repeat", "The number of iterations (default: forever)."));
+            AddOption(new Option<uint>("--interval", "The seconds between times to read (default: 10)."));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public async Task<int> OnExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (!(Parent is null))
-            {
-                // Overriding Fronius options.
-                _settings.BaseAddress = Parent.BaseAddress;
-                _settings.Timeout = Parent.Timeout;
-                _settings.DeviceID = Parent.DeviceID;
-            }
-
-            if (Parent?.ShowSettings ?? false)
-            {
-                _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-            }
-
-            try
-            {
-                bool forever = (Repeat == 0);
-                bool verbose = true;
-
-                await Task.Factory.StartNew(async () =>
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, CancellationToken, GlobalOptions, MonitorOptions>
+                (async (console, token, globals, options) =>
                 {
-                    while (!cancellationToken.IsCancellationRequested)
+                    logger.LogDebug("Handler()");
+
+                    if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
                     {
-                        // Read the specified data.
-                        var start = DateTime.UtcNow;
-                        ReadingData(verbose);
-                        // Only first call is verbose.
-                        verbose = false;
-                        var end = DateTime.UtcNow;
-                        double delay = ((Seconds * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Device ID:     {globals.DeviceID}");
+                        console.Out.WriteLine($"Address:       {globals.Address}");
+                        console.Out.WriteLine($"Timeout:       {globals.Timeout}");
+                        console.Out.WriteLine();
+                    }
 
-                        if (Seconds > 0)
-                        {
-                            if (delay < 0)
-                            {
-                                _logger?.LogWarning($"Monitoring: no time between reads (duration: {((end - start).TotalMilliseconds / 1000.0):F2}).");
-                            }
-                            else
-                            {
-                                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
-                            }
-                        }
+                    try
+                    {
+                        bool forever = (options.Repeat == 0);
+                        bool header = true;
 
-                        if (!forever && (--Repeat <= 0))
+                        await Task.Factory.StartNew(async () =>
                         {
+                            while (!token.IsCancellationRequested)
+                            {
+                                // Read the specified data.
+                                var start = DateTime.UtcNow;
+
+                                console.Out.WriteLine(start.ToLongTimeString());
+
+                                ReadingData(console, gateway, options, header);
+
+                                // Only first call is showing the header.
+                                header = false;
+                                var end = DateTime.UtcNow;
+                                var elapsed = (end - start).TotalMilliseconds;
+                                double delay = ((options.Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+
+                                console.Out.WriteLine($"Elapsed time: {(elapsed / 1000.0):F2}");
+
+                                if (options.Interval > 0)
+                                {
+                                    if (delay < 0)
+                                    {
+                                        console.YellowWriteLine("Monitoring: no time between reads.");
+                                    }
+                                    else
+                                    {
+                                        await Task.Delay(TimeSpan.FromSeconds(delay), token);
+                                    }
+                                }
+
+                                if (!forever && (--options.Repeat <= 0))
+                                {
+                                    _closing.Set();
+                                    break;
+                                }
+                            }
+                        }, token);
+
+                        Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
+                        {
+                            console.Out.WriteLine($"Monitoring cancelled.");
                             _closing.Set();
-                            break;
-                        }
+                        });
+
+                        _closing.WaitOne();
+                    }
+                    catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        return (int)ExitCodes.OperationCanceled;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        return (int)ExitCodes.OperationCanceled;
+                    }
+                    catch (Exception)
+                    {
+                        console.Out.WriteLine($"Monitoring exception.");
+                        return (int)ExitCodes.OperationCanceled;
                     }
 
-                }, cancellationToken);
-
-                _console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
-                {
-                    _console.WriteLine($"Monitoring cancelled.");
-                    _closing.Set();
+                    return (int)ExitCodes.SuccessfullyCompleted;
                 });
-
-                _closing.WaitOne();
-            }
-            catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-            }
-            catch (OperationCanceledException)
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-                throw;
-            }
-            catch
-            {
-                _logger.LogError("MonitorCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
         }
 
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Data) ++options;
-                if (Common) ++options;
-                if (Inverter) ++options;
-                if (Logger) ++options;
-                if (MinMax) ++options;
-                if (Phase) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Data)
-                    {
-                        if (!typeof(FroniusData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Common)
-                    {
-                        if (!typeof(CommonData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Inverter)
-                    {
-                        if (!typeof(InverterInfo).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Logger)
-                    {
-                        if (!typeof(LoggerInfo).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (MinMax)
-                    {
-                        if (!typeof(MinMaxData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Phase)
-                    {
-                        if (!typeof(PhaseData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        #endregion Public Methods
+        #endregion Constructors
 
         #region Private Methods
 
         /// <summary>
         /// Reading the specified data.
         /// </summary>
-        private void ReadingData(bool verbose = false)
+        private void ReadingData(IConsole console, FroniusGateway gateway, MonitorOptions options, bool header = false)
         {
-            if (string.IsNullOrEmpty(Property))
+            if (string.IsNullOrEmpty(options.Name))
             {
-                if (Data)
+                if (options.Data)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring Fronius data.");
-                    DataStatus status = _gateway.ReadAll();
+                    if (header) console.Out.WriteLine($"Monitoring Fronius data.");
+                    DataStatus status = gateway.ReadAll();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Data:");
-                        _console.WriteLine(JsonSerializer.Serialize<FroniusData>(_gateway.Data, _options));
+                        console.Out.WriteLine($"Data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<FroniusData>(gateway.Data, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading data from Fronius solar inverter.");
                     }
                 }
 
-                if (Common)
+                if (options.Common)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring common inverter data.");
-                    DataStatus status = _gateway.ReadCommonData();
+                    if (header) console.Out.WriteLine($"Monitoring common inverter data.");
+                    DataStatus status = gateway.ReadCommonData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Common:");
-                        _console.WriteLine(JsonSerializer.Serialize<CommonData>(_gateway.CommonData, _options));
+                        console.Out.WriteLine($"Common:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<CommonData>(gateway.CommonData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading common inverter data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading common inverter data from Fronius solar inverter.");
                     }
                 }
 
-                if (Inverter)
+                if (options.Inverter)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring inverter info data.");
-                    DataStatus status = _gateway.ReadInverterInfo();
+                    if (header) console.Out.WriteLine($"Monitoring inverter info data.");
+                    DataStatus status = gateway.ReadInverterInfo();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Inverter:");
-                        _console.WriteLine(JsonSerializer.Serialize<InverterInfo>(_gateway.InverterInfo, _options));
+                        console.Out.WriteLine($"Inverter:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<InverterInfo>(gateway.InverterInfo, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading hotwater data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading hotwater data from Fronius solar inverter.");
                     }
                 }
 
-                if (Logger)
+                if (options.Logger)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring logger info data.");
-                    DataStatus status = _gateway.ReadLoggerInfo();
+                    if (header) console.Out.WriteLine($"Monitoring logger info data.");
+                    DataStatus status = gateway.ReadLoggerInfo();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Logger:");
-                        _console.WriteLine(JsonSerializer.Serialize<LoggerInfo>(_gateway.LoggerInfo, _options));
+                        console.Out.WriteLine($"Logger:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<LoggerInfo>(gateway.LoggerInfo, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading logger info from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading logger info from Fronius solar inverter.");
                     }
                 }
 
-                if (MinMax)
+                if (options.MinMax)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring minmax data.");
-                    DataStatus status = _gateway.ReadMinMaxData();
+                    if (header) console.Out.WriteLine($"Monitoring minmax data.");
+                    DataStatus status = gateway.ReadMinMaxData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"MinMax:");
-                        _console.WriteLine(JsonSerializer.Serialize<MinMaxData>(_gateway.MinMaxData, _options));
+                        console.Out.WriteLine($"MinMax:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<MinMaxData>(gateway.MinMaxData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading minmax data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading minmax data from Fronius solar inverter.");
                     }
                 }
 
-                if (Phase)
+                if (options.Phase)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring phase data.");
-                    DataStatus status = _gateway.ReadPhaseData();
+                    if (header) console.Out.WriteLine($"Monitoring phase data.");
+                    DataStatus status = gateway.ReadPhaseData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Phase:");
-                        _console.WriteLine(JsonSerializer.Serialize<PhaseData>(_gateway.PhaseData, _options));
+                        console.Out.WriteLine($"Phase:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<PhaseData>(gateway.PhaseData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading phase data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading phase data from Fronius solar inverter.");
                     }
                 }
             }
             else
             {
-                if (verbose) _console.WriteLine($"Monitoring property '{Property}':");
+                if (header) console.Out.WriteLine($"Monitoring property '{options.Name}':");
 
-                if (Data)
+                if (options.Data)
                 {
-                    DataStatus status = _gateway.ReadAll();
+                    DataStatus status = gateway.ReadAll();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Data.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Data.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading data from Fronius solar inverter.");
                     }
                 }
 
-                if (Common)
+                if (options.Common)
                 {
-                    DataStatus status = _gateway.ReadCommonData();
+                    DataStatus status = gateway.ReadCommonData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.CommonData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.CommonData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading common inverter data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading common inverter data from Fronius solar inverter.");
                     }
                 }
 
-                if (Inverter)
+                if (options.Inverter)
                 {
-                    DataStatus status = _gateway.ReadInverterInfo();
+                    DataStatus status = gateway.ReadInverterInfo();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.InverterInfo.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.InverterInfo.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading inverter info from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading inverter info from Fronius solar inverter.");
                     }
                 }
 
-                if (Logger)
+                if (options.Logger)
                 {
-                    DataStatus status = _gateway.ReadLoggerInfo();
+                    DataStatus status = gateway.ReadLoggerInfo();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.LoggerInfo.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.LoggerInfo.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading logger info from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading logger info from Fronius solar inverter.");
                     }
                 }
 
-                if (MinMax)
+                if (options.MinMax)
                 {
-                    DataStatus status = _gateway.ReadMinMaxData();
+                    DataStatus status = gateway.ReadMinMaxData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.MinMaxData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.MinMaxData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading minmax data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading minmax data from Fronius solar inverter.");
                     }
                 }
 
-                if (Phase)
+                if (options.Phase)
                 {
-                    DataStatus status = _gateway.ReadPhaseData();
+                    DataStatus status = gateway.ReadPhaseData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.PhaseData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.PhaseData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading phase data from Fronius solar inverter.");
+                        console.Out.WriteLine($"Error reading phase data from Fronius solar inverter.");
                     }
                 }
             }

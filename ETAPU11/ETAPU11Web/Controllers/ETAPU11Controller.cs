@@ -1,10 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="ETAPU11Controller.cs" company="DTV-Online">
-//   Copyright(c) 2018 Dr. Peter Trimmel. All rights reserved.
+//   Copyright (c) 2020 Dr. Peter Trimmel. All rights reserved.
 // </copyright>
 // <license>
-// Licensed under the MIT license. See the LICENSE file in the project root for more information.
+//   Licensed under the MIT license. See the LICENSE file in the project root for more information.
 // </license>
+// <created>17-12-2020 12:52</created>
+// <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
 namespace ETAPU11Web.Controllers
 {
@@ -14,14 +16,16 @@ namespace ETAPU11Web.Controllers
 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
     using Swashbuckle.AspNetCore.Annotations;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using ETAPU11Lib;
     using ETAPU11Lib.Models;
+
     using ETAPU11Web.Models;
 
     #endregion Using Directives
@@ -32,7 +36,7 @@ namespace ETAPU11Web.Controllers
     [ApiController]
     [Route("/")]
     [Produces("application/json")]
-    public class ETAPU11Controller : BaseController<AppSettings>
+    public class ETAPU11Controller : BaseController
     {
         #region Private Fields
 
@@ -46,19 +50,11 @@ namespace ETAPU11Web.Controllers
         /// Initializes a new instance of the <see cref="ETAPU11Controller"/> class.
         /// The parameters provided by dependency injection are used to set private fields.
         /// </summary>
-        /// <param name="gateway"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        public ETAPU11Controller(ETAPU11Gateway gateway,
-                                 AppSettings settings,
-                                 IConfiguration config,
-                                 IHostEnvironment environment,
-                                 IHostApplicationLifetime lifetime,
-                                 ILogger<ETAPU11Controller> logger)
-            : base(settings, config, environment, lifetime, logger)
+        /// <param name="gateway">The ETAPU11 gateway instance.</param>
+        /// <param name="configuration">The application configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
+        public ETAPU11Controller(ETAPU11Gateway gateway, IConfiguration configuration, ILogger<ETAPU11Controller> logger)
+            : base(configuration, logger)
         {
             _gateway = gateway;
         }

@@ -15,8 +15,7 @@ namespace FroniusWeb
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Extensions.Hosting;
 
-    using UtilityLib;
-    using FroniusWeb.Models;
+    using Serilog;
 
     #endregion Using Directives
 
@@ -43,8 +42,13 @@ namespace FroniusWeb
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.ConfigureBaseHost<AppSettings>()
-                              .UseStartup<Startup>();
+                    webBuilder
+                        .CaptureStartupErrors(true)
+                        .UseSerilog((context, logger) =>
+                        {
+                            logger.ReadFrom.Configuration(context.Configuration);
+                        })
+                        .UseStartup<Startup>();
                 });
     }
 }

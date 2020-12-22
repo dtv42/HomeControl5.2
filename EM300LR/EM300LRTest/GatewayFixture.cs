@@ -29,10 +29,7 @@ namespace EM300LRTest
         #region Public Properties
 
         public EM300LRGateway Gateway { get; private set; }
-        public EM300LRSettings Settings { get; private set; } = new EM300LRSettings()
-        {
-            Address = "http://10.0.1.5"
-        };
+        public EM300LRSettings Settings { get; private set; } = new EM300LRSettings();
 
         #endregion Public Properties
 
@@ -45,10 +42,11 @@ namespace EM300LRTest
             var loggerFactory = new LoggerFactory();
 
             var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
                 .AddUserSecrets("15e9821a-836b-4bb0-96d6-e83cb4b42cd4")
                 .Build();
 
-            configuration.GetSection("AppSettings").Bind(Settings);
+            configuration.GetSection("AppSettings:GatewaySettings").Bind(Settings);
 
             var client = new EM300LRClient(new HttpClient()
                                            {

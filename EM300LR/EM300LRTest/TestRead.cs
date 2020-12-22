@@ -10,7 +10,6 @@ namespace EM300LRTest
 {
     #region Using Directives
 
-    using System.Globalization;
     using System.Threading.Tasks;
 
     using Xunit;
@@ -38,9 +37,6 @@ namespace EM300LRTest
         /// </summary>
         public TestRead(GatewayFixture fixture)
         {
-            // Set the default culture.
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-
             _gateway = fixture.Gateway;
         }
 

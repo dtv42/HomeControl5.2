@@ -15,16 +15,15 @@ namespace HeliosWeb.Controllers
 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
     using Swashbuckle.AspNetCore.Annotations;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using HeliosLib;
     using HeliosLib.Models;
-
-    using HeliosWeb.Models;
 
     #endregion
 
@@ -34,7 +33,7 @@ namespace HeliosWeb.Controllers
     [ApiController]
     [Route("/")]
     [Produces("application/json")]
-    public class HeliosController : BaseController<AppSettings>
+    public class HeliosController : BaseController
     {
         #region Private Fields
 
@@ -46,20 +45,13 @@ namespace HeliosWeb.Controllers
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HeliosController"/> class.
+        /// The parameters provided by dependency injection are used to set private fields.
         /// </summary>
-        /// <param name="gateway"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        public HeliosController(HeliosGateway gateway,
-                                AppSettings settings,
-                                IConfiguration config,
-                                IHostEnvironment environment,
-                                IHostApplicationLifetime lifetime,
-                                ILogger<HeliosController> logger)
-            : base(settings, config, environment, lifetime, logger)
+        /// <param name="gateway">The EM300LR gateway instance.</param>
+        /// <param name="configuration">The application configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
+        public HeliosController(HeliosGateway gateway, IConfiguration configuration, ILogger<HeliosController> logger)
+            : base(configuration, logger)
         {
             _gateway = gateway;
         }

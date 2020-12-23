@@ -9,6 +9,7 @@
     <Company />
     <Description>Helios gateway application.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
+    <UserSecretsId>64c846d9-0a3d-48a4-a821-af02bb1f8764</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

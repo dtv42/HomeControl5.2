@@ -10,6 +10,8 @@ namespace HeliosWeb.Models
 {
     #region Using Directives
 
+    using UtilityLib.Webapp;
+
     using HeliosLib.Models;
 
     #endregion Using Directives
@@ -17,7 +19,9 @@ namespace HeliosWeb.Models
     /// <summary>
     /// Only the Helios settings from <see cref="HeliosLib.Models.HeliosSettings"/> are used here. 
     /// </summary>
-    public class AppSettings : HeliosSettings
+    public class AppSettings
     {
+        public HeliosSettings GatewaySettings { get; set; } = new HeliosSettings();
+        public PingHealthCheckOptions PingOptions { get; set; } = new PingHealthCheckOptions();
     }
 }

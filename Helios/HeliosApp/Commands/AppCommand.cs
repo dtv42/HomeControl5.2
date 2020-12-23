@@ -85,8 +85,8 @@ namespace HeliosApp.Commands
             // Adding sub commands to root command.
             AddCommand(infoCommand);
             AddCommand(readCommand);
-            //AddCommand(monitorCommand);
-            //AddCommand(controlCommand);
+            AddCommand(monitorCommand);
+            AddCommand(controlCommand);
 
             // Get settings from configuration and gateway instance.
             var settings = configuration.GetSection("AppSettings").Get<AppSettings>();

@@ -7,9 +7,12 @@
 
     using Microsoft.AspNetCore.Mvc.Testing;
 
+    using HealthChecks.UI.Core;
+
     using Xunit;
 
     using UtilityLib;
+
     using HeliosLib.Models;
 
     #endregion Using Directives
@@ -27,6 +30,7 @@
         {
             _factory = factory;
             _options.AddDefaultOptions();
+            _options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         }
 
         #region Test Methods
@@ -47,10 +51,8 @@
         }
 
         [Theory]
-        [InlineData("/health")]
-        [InlineData("/health?access=true")]
-        [InlineData("/health?timeout=10")]
-        [InlineData("/health?access=true&timeout=10")]
+        [InlineData("/healthchecks")]
+        [InlineData("/healthchecks-ui")]
         public async Task TestHealthEndpoints(string url)
         {
             // Arrange
@@ -61,7 +63,22 @@
 
             // Assert
             Assert.True(response.IsSuccessStatusCode);
-            Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType.ToString());
+        }
+
+        [Theory]
+        [InlineData("/health-process")]
+        [InlineData("/health-gateway")]
+        public async Task TestHealthReport(string url)
+        {
+            // Arrange
+            var client = _factory.CreateClient();
+
+            // Act
+            var response = await client.GetAsync(url);
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.Contains("application/json", response.Content.Headers.ContentType.ToString());
             var json = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<UIHealthReport>(json, _options);
             Assert.NotNull(data);
@@ -1839,8 +1856,8 @@
             Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType.ToString());
             var json = await response.Content.ReadAsStringAsync();
             var info = JsonSerializer.Deserialize<HeliosInfo>(json);
-            Assert.True(info.Settings.BaseAddress.Length > 0);
-            Assert.Equal(100, info.Settings.Timeout);
+            Assert.True(info.Settings.Address.Length > 0);
+            Assert.True(info.Settings.Timeout > 0);
             Assert.True(info.IsStartupOk);
             Assert.Equal(DataStatus.Good.Code, info.Status.Code);
             Assert.Equal(DataStatus.Good.Name, info.Status.Name);

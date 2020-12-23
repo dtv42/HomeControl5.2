@@ -14,6 +14,7 @@ namespace HeliosTest
     using System.Globalization;
     using System.Net.Http;
 
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
     using HeliosLib;
@@ -26,11 +27,7 @@ namespace HeliosTest
         #region Public Properties
 
         public HeliosGateway Gateway { get; }
-        public HeliosSettings Settings { get; private set; } = new HeliosSettings()
-        {
-            BaseAddress = "http://10.0.1.3",
-            Password = "!helios!"
-        };
+        public HeliosSettings Settings { get; private set; } = new HeliosSettings();
 
         #endregion
 
@@ -42,8 +39,18 @@ namespace HeliosTest
 
             var loggerFactory = new LoggerFactory();
 
-            var client = new HeliosClient(new HttpClient(),
-                                          Settings,
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddUserSecrets("64c846d9-0a3d-48a4-a821-af02bb1f8764")
+                .Build();
+
+            configuration.GetSection("AppSettings:GatewaySettings").Bind(Settings);
+
+            var client = new HeliosClient(new HttpClient()
+                                          {
+                                              BaseAddress = new Uri(Settings.Address),
+                                              Timeout = TimeSpan.FromMilliseconds(Settings.Timeout)
+                                          },
                                           loggerFactory.CreateLogger<HeliosClient>());
 
             Gateway = new HeliosGateway(client,

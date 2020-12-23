@@ -552,8 +552,8 @@ namespace FroniusLib
             if (IsStartupOk)
             {
                 _logger.LogInformation("Fronius Symo Gateway:");
-                _logger.LogInformation($"    Base Address: {_settings.Address}");
-                _logger.LogInformation($"    Device ID:    {_settings.DeviceID}");
+                _logger.LogInformation($"    Address:   {_settings.Address}");
+                _logger.LogInformation($"    Device ID: {_settings.DeviceID}");
                 _logger.LogInformation($"Startup OK");
             }
             else

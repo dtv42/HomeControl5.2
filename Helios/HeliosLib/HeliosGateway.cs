@@ -13,12 +13,15 @@ namespace HeliosLib
     #region Using Directives
 
     using System;
+    using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using HeliosLib.Models;
 
     #endregion
@@ -30,7 +33,7 @@ namespace HeliosLib
     /// NR. 82 269 - Modbus Gateway TCP/IP mit EasyControls. Druckschrift-Nr. 82269/07.14
     /// and the XML data returned from the easyControl Web Service.
     /// </summary>
-    public class HeliosGateway : BaseGateway<HeliosSettings>
+    public class HeliosGateway : BaseGateway
     {
         #region Private Data Members
 
@@ -38,6 +41,11 @@ namespace HeliosLib
         /// The HTTP client instantiated using the HTTP client factory.
         /// </summary>
         private readonly HeliosClient _client;
+
+        /// <summary>
+        /// The Helios client settings.
+        /// </summary>
+        private readonly HeliosSettings _settings;
 
         #endregion
 
@@ -146,14 +154,21 @@ namespace HeliosLib
         /// Initializes a new instance of the <see cref="HeliosGateway"/> class.
         /// </summary>
         /// <param name="client">The custom HTTP client.</param>
+        /// <param name="settings">The Helios settings.</param>
         /// <param name="logger">The application logger instance.</param>
-        /// <param name="options">The Helios settings.</param>
         public HeliosGateway(HeliosClient client,
-                             HeliosSettings settings,
+                             IHeliosSettings settings,
                              ILogger<HeliosGateway> logger)
-            : base(settings, logger)
+            : base(logger)
         {
             _logger?.LogDebug($"HeliosGateway()");
+
+            _settings = new HeliosSettings()
+            {
+                Address = settings.Address,
+                Timeout = settings.Timeout,
+                Password = settings.Password
+            };
 
             _client = client;
         }
@@ -1332,8 +1347,8 @@ namespace HeliosLib
             if (IsStartupOk)
             {
                 _logger.LogInformation("Helios Gateway:");
-                _logger.LogInformation($"    Base Address: {_settings.BaseAddress}");
-                _logger.LogInformation($"    Password:     {_settings.Password}");
+                _logger.LogInformation($"    Address:  {_settings.Address}");
+                _logger.LogInformation($"    Password: {_settings.Password}");
                 _logger.LogInformation($"Startup OK");
             }
             else
@@ -1350,12 +1365,6 @@ namespace HeliosLib
         /// <returns>Flag indicating success or failure.</returns>
         public override bool CheckAccess()
             => (LoginAsync().Result);
-
-        /// <summary>
-        /// Updates the client using the HeliosSettings instance.
-        /// </summary>
-        public void UpdateClient()
-            => _client.Update();
 
         #endregion
     }

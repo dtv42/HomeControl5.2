@@ -3,7 +3,6 @@
     #region Using Directives
 
     using System.Net.Http;
-    using System.Text;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Logging;

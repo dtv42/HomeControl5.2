@@ -22,8 +22,8 @@ namespace UtilityLib
         /// <returns></returns>
         public static bool IsProperty(this Type type, string name)
         {
-            if (type is null) throw new ArgumentNullException("Type cannot be null.", nameof(type));
-            if (name is null) throw new ArgumentNullException("Name cannot be null.", nameof(name));
+            if (type is null) throw new ArgumentNullException(nameof(type), "Type cannot be null.");
+            if (name is null) throw new ArgumentNullException(nameof(name), "Name cannot be null.");
 
             return !(type.GetProperty(name) is null);
         }
@@ -36,8 +36,8 @@ namespace UtilityLib
         /// <returns></returns>
         public static object? GetPropertyValue(this object obj, string name)
         {
-            if (obj is null) throw new ArgumentNullException("Object cannot be null.", nameof(obj));
-            if (name is null) throw new ArgumentNullException("Name cannot be null.", nameof(name));
+            if (obj is null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
+            if (name is null) throw new ArgumentNullException(nameof(name), "Name cannot be null.");
 
             var info = obj?.GetType().GetProperty(name);
             return info?.GetValue(obj, null);
@@ -51,9 +51,9 @@ namespace UtilityLib
         /// <param name="value">The property value</param>
         public static void SetPropertyValue(this object obj, string name, object value)
         {
-            if (obj is null) throw new ArgumentNullException("Object cannot be null.", nameof(obj));
-            if (name is null) throw new ArgumentNullException("Name cannot be null.", nameof(name));
-            if (value is null) throw new ArgumentNullException("Value cannot be null.", nameof(value));
+            if (obj is null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
+            if (name is null) throw new ArgumentNullException(nameof(name), "Name cannot be null.");
+            if (value is null) throw new ArgumentNullException(nameof(value), "Value cannot be null.");
 
             var info = obj?.GetType().GetProperty(name);
             info?.SetValue(obj, value);

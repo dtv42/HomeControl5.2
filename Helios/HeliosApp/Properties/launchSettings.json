@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "HeliosApp": {
+      "commandName": "Project",
+      "commandLineArgs": "read -a",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

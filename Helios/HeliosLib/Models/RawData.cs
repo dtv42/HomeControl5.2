@@ -29,13 +29,23 @@ namespace HeliosLib.Models
             doc.LoadXml(xml);
 
             var parameter = doc.DocumentElement;
-            Language = parameter.GetElementsByTagName("LANG")[0].InnerText;
-            var labels = parameter.GetElementsByTagName("ID");
-            var values = parameter.GetElementsByTagName("VA");
 
-            for (int i = 0; i < labels.Count; ++i)
+            if (parameter is not null)
             {
-                Parameters.Add(labels[i].InnerText, values[i].InnerText);
+                Language = parameter.GetElementsByTagName("LANG")[0]?.InnerText ?? string.Empty;
+                var labels = parameter.GetElementsByTagName("ID");
+                var values = parameter.GetElementsByTagName("VA");
+
+                for (int i = 0; i < labels.Count; ++i)
+                {
+                    var label = labels[i];
+                    var value = values[i];
+
+                    if ((label is not null) && (value is not null))
+                    {
+                        Parameters.Add(label.InnerText, value.InnerText);
+                    }
+                }
             }
         }
     }

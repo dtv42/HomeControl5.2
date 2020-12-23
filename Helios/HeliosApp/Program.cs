@@ -13,54 +13,120 @@ namespace HeliosApp
     #region Using Directives
 
     using System;
-    using System.Net.Http;
+    using System.Collections.Generic;
+    using System.CommandLine;
     using System.Threading.Tasks;
 
-    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
 
-    using Polly;
-    using Polly.Extensions.Http;
+    using Serilog;
 
     using UtilityLib;
+    using UtilityLib.Console;
+    using UtilityLib.Webapp;
+
     using HeliosLib;
     using HeliosLib.Models;
 
     using HeliosApp.Commands;
     using HeliosApp.Models;
+    using HeliosApp.Options;
 
     #endregion Using Directives
 
     /// <summary>
     /// Class providing the main application entry point.
     /// </summary>
-    public class Program : BaseProgram<AppSettings, RootCommand>
+    internal static class Program
     {
         /// <summary>
-        /// The main console application entry point.
+        /// The entry point for the program configuring the logger using Serilog, and configuring all 
+        /// application commands and options. The RunCommandLineAsync() is configuring the commandline parser.
         /// </summary>
-        /// <param name="args">The command line arguments.</param>
-        /// <returns>The exit code.</returns>
-        static async Task<int> Main(string[] args)
-            => await CreateDefaultBuilder()
-            .ConfigureServices((context, services) =>
+        /// <param name="args">The arguments.</param>
+        /// <returns>When complete, an integer representing success (0) or failure (non-0).</returns>
+        public static async Task<int> Main(string[] args)
+        {
+            try
             {
-                // Configure the Helios specific settings and the singleton Helios instances.
-                // Add a singleton service using the application settings implementing Helios client settings.
-                services.AddSingleton((HeliosSettings)context.Configuration.GetSection("AppSettings").Get<AppSettings>());
-
-                services.AddHttpClient<HeliosClient>()
-                    .ConfigureHttpMessageHandlerBuilder(config => new HttpClientHandler
+                // Create host using serilog, adding commands and options services.
+                return await Host.CreateDefaultBuilder()
+                    .ConfigureServices((context, services) =>
                     {
-                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
-                    })
-                    .AddPolicyHandler(HttpPolicyExtensions
-                        .HandleTransientHttpError()
-                        .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-                            .WaitAndRetryAsync(3, attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
+                        var settings = context.Configuration.GetSection("AppSettings").Get<AppSettings>();
 
-                services.AddSingleton<HeliosGateway>();
-            })
-            .BaseProgramRunAsync<AppSettings, RootCommand>(args);
+                        // Configure the singleton EM300LR client instance.
+                        services
+                            .AddSingleton<IHeliosSettings>(settings.GlobalOptions)
+                            .AddPollyHttpClient<HeliosClient>("HeliosClient",
+                                new List<TimeSpan>
+                                {
+                                    TimeSpan.FromSeconds(10),
+                                    TimeSpan.FromSeconds(20),
+                                    TimeSpan.FromSeconds(30)
+                                },
+                                client =>
+                                {
+                                    client.BaseAddress = new Uri(settings.GlobalOptions.Address);
+                                    client.Timeout = TimeSpan.FromMilliseconds(settings.GlobalOptions.Timeout);
+                                });
+
+                        // Add single gateway.
+                        services
+                            .AddSingleton<HeliosGateway>()
+
+                        // Add command options.
+                            .AddSingletonFromSection<GlobalOptions>()
+                            .AddSingleton<InfoOptions>()
+                            .AddSingleton<ReadOptions>()
+                            .AddSingleton<MonitorOptions>()
+                            .AddSingleton<ControlOptions>()
+
+                            // Add commands.
+                            .AddSingleton<ControlCommand>()
+                            .AddSingleton<InfoCommand>()
+                            .AddSingleton<ReadCommand>()
+                            .AddSingleton<MonitorCommand>()
+
+                            // Add root command.
+                            .AddSingleton<RootCommand, AppCommand>();
+                    })
+                    .UseSerilog((context, logger) =>
+                    {
+                        logger.ReadFrom.Configuration(context.Configuration);
+                    })
+                    .Build()
+                    .RunCommandLineAsync(args);
+            }
+            catch (ArgumentException ax)
+            {
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+
+                    Console.Error.WriteLine(ax.Message);
+
+                    Console.ResetColor();
+                    return (int)ExitCodes.IncorrectFunction;
+                }
+            }
+            catch (Exception ex)
+            {
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+
+                    Console.Error.WriteLine($"Unhandled exception: {ex.Message}");
+
+                    if (ex.InnerException is not null)
+                    {
+                        Console.Error.WriteLine($"    Inner Exception: {ex.InnerException.Message}");
+                    }
+
+                    Console.ResetColor();
+                    return (int)ExitCodes.UnhandledException;
+                }
+            }
+        }
     }
 }

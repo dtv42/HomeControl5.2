@@ -13,108 +13,37 @@ namespace HeliosApp.Commands
     #region Using Directives
 
     using System;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using HeliosLib;
     using HeliosLib.Models;
 
-    using HeliosApp.Models;
+    using HeliosApp.Options;
 
-    #endregion
+    #endregion Using Directives
 
     /// <summary>
     /// Application command "monitor".
     /// </summary>
-    [Command(Name = "monitor",
-             FullName = "Helios Monitor Command",
-             Description = "Monitoring data values from Helios KWL EC 200 ventilation system.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class MonitorCommand : BaseCommand<MonitorCommand, AppSettings>
+    public class MonitorCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
         private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-        private readonly HeliosGateway _gateway;
 
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("-a|--alldata", Description = "Reads all data.")]
-        public bool Data { get; set; }
-
-        [Option("-b|--booster", Description = "Get the booster data.")]
-        public bool Booster { get; set; }
-
-        [Option("-d|--device", Description = "Get the device data.")]
-        public bool Device { get; set; }
-
-        [Option("-e|--error", Description = "Get the current error data.")]
-        public bool Error { get; set; }
-
-        [Option("-f|--fan", Description = "Get the fan data.")]
-        public bool Fan { get; set; }
-
-        [Option("-h|--heater", Description = "Get the heater data.")]
-        public bool Heater { get; set; }
-
-        [Option("-i|--info", Description = "Get the info data.")]
-        public bool Info { get; set; }
-
-        [Option("-l|--label", Description = "Get data by label.")]
-        public bool Label { get; set; }
-
-        [Option("-n|--network", Description = "Get the network data.")]
-        public bool Network { get; set; }
-
-        [Option("-o|--operation", Description = "Get the initial operation data.")]
-        public bool Operation { get; set; }
-
-        [Option("-p|--display", Description = "Get the current system status data.")]
-        public bool Display { get; set; }
-
-        [Option("-s|--sensor", Description = "Get the sensor data.")]
-        public bool Sensor { get; set; }
-
-        [Option("-t|--technical", Description = "Get the technical data.")]
-        public bool Technical { get; set; }
-
-        [Option("-v|--vacation", Description = "Get the vacation data.")]
-        public bool Vacation { get; set; }
-
-        [Option("-y|--system", Description = "Get the system data.")]
-        public bool System { get; set; }
-
-        [Argument(0, Description = "Monitors the named property.")]
-        public string Property { get; } = string.Empty;
-
-        [Option("--repeat", Description = "The number of iterations (default: forever).")]
-        public uint Repeat { get; set; } = 0;
-
-        [Option("--interval", Description = "The seconds between times to read (default: 10).")]
-        public uint Seconds { get; set; } = 10;
-
-        #endregion
+        #endregion Private Data Members
 
         #region Constructors
 
@@ -122,783 +51,575 @@ namespace HeliosApp.Commands
         /// Initializes a new instance of the <see cref="MonitorCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public MonitorCommand(HeliosGateway gateway,
-                              IConsole console,
-                              AppSettings settings,
-                              IConfiguration config,
-                              IHostEnvironment environment,
-                              IHostApplicationLifetime lifetime,
-                              ILogger<MonitorCommand> logger,
-                              CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        public MonitorCommand(HeliosGateway gateway, ILogger<ReadCommand> logger)
+            : base(logger, "monitor", "Monitoring data values from Helios KWL EC 200 ventilation system.")
         {
             _logger?.LogDebug("MonitorCommand()");
 
-            // Setting the Helios instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
 
-        #endregion
+            // The new help option is allowing the use of a -h option.
+            AddOption(new Option<bool>(new string[] { "-?", "--help", "/?", "/help" }, "Show help and usage information"));
 
-        #region Public Methods
+            AddOption(new Option<bool>(new string[] { "-a", "--alldata" }, "Reads all data."));
+            AddOption(new Option<bool>(new string[] { "-b", "--booster" }, "Reads the booster data."));
+            AddOption(new Option<bool>(new string[] { "-d", "--device" }, "Reads the device data."));
+            AddOption(new Option<bool>(new string[] { "-e", "--error" }, "Reads the current error data."));
+            AddOption(new Option<bool>(new string[] { "-f", "--fan" }, "Reads the fan data."));
+            AddOption(new Option<bool>(new string[] { "-h", "--heater" }, "Reads the heater data."));
+            AddOption(new Option<bool>(new string[] { "-i", "--info" }, "Reads the info data."));
+            AddOption(new Option<bool>(new string[] { "-n", "--network" }, "Reads the network data."));
+            AddOption(new Option<bool>(new string[] { "-o", "--operation" }, "Reads the initial operation data."));
+            AddOption(new Option<bool>(new string[] { "-p", "--display" }, "Reads the current system status data."));
+            AddOption(new Option<bool>(new string[] { "-s", "--sensor" }, "Reads the sensor data."));
+            AddOption(new Option<bool>(new string[] { "-t", "--technical" }, "Reads the technical data."));
+            AddOption(new Option<bool>(new string[] { "-v", "--vacation" }, "Reads the vacation data."));
+            AddOption(new Option<bool>(new string[] { "-y", "--system" }, "Reads the system data."));
+            AddOption(new Option<bool>(new string[] { "-l", "--label" }, "Reads the data by label."));
+            AddOption(new Option<bool>("--status", "Shows the data status"));
 
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public async Task<int> OnExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (!(Parent is null))
-            {
-                // Overriding Helios options.
-                _settings.BaseAddress = Parent.BaseAddress;
-                _settings.Timeout = Parent.Timeout;
-                _settings.Password = Parent.Password;
-            }
-
-            if (Parent?.ShowSettings ?? false)
-            {
-                _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-            }
-
-            try
-            {
-                bool forever = (Repeat == 0);
-                bool verbose = true;
-
-                await Task.Factory.StartNew(async () =>
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, CancellationToken, GlobalOptions, bool, MonitorOptions>
+                (async (console, token, globals, help, options) =>
                 {
-                    while (!cancellationToken.IsCancellationRequested)
+                    logger.LogDebug("Handler()");
+
+                    // Showing the command help output.
+                    if (help) { this.ShowHelp(console); return (int)ExitCodes.SuccessfullyCompleted; }
+
+                    if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
                     {
-                        // Read the specified data.
-                        var start = DateTime.UtcNow;
-                        ReadingData(verbose);
-                        // Only first call is verbose.
-                        verbose = false;
-                        var end = DateTime.UtcNow;
-                        double delay = ((Seconds * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Password:      {globals.Password}");
+                        console.Out.WriteLine($"Address:       {globals.Address}");
+                        console.Out.WriteLine($"Timeout:       {globals.Timeout}");
+                        console.Out.WriteLine();
+                    }
 
-                        if (Seconds > 0)
-                        {
-                            if (delay < 0)
-                            {
-                                _logger?.LogWarning($"Monitoring: no time between reads (duration: {((end - start).TotalMilliseconds / 1000.0):F2}).");
-                            }
-                            else
-                            {
-                                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
-                            }
-                        }
+                    try
+                    {
+                        bool forever = (options.Repeat == 0);
+                        bool header = true;
 
-                        if (!forever && (--Repeat <= 0))
+                        await Task.Factory.StartNew(async () =>
                         {
+                            while (!token.IsCancellationRequested)
+                            {
+                                // Read the specified data.
+                                var start = DateTime.UtcNow;
+
+                                console.Out.WriteLine(start.ToLongTimeString());
+
+                                ReadingData(console, gateway, options, header);
+
+                                // Only first call is showing the header.
+                                header = false;
+                                var end = DateTime.UtcNow;
+                                var elapsed = (end - start).TotalMilliseconds;
+                                double delay = ((options.Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+
+                                console.Out.WriteLine($"Elapsed time: {(elapsed / 1000.0):F2}");
+
+                                if (options.Interval > 0)
+                                {
+                                    if (delay < 0)
+                                    {
+                                        console.YellowWriteLine("Monitoring: no time between reads.");
+                                    }
+                                    else
+                                    {
+                                        await Task.Delay(TimeSpan.FromSeconds(delay), token);
+                                    }
+                                }
+
+                                if (!forever && (--options.Repeat <= 0))
+                                {
+                                    _closing.Set();
+                                    break;
+                                }
+                            }
+                        }, token);
+
+                        Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
+                        {
+                            console.Out.WriteLine($"Monitoring cancelled.");
                             _closing.Set();
-                            break;
-                        }
+                        });
+
+                        _closing.WaitOne();
+                    }
+                    catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        return (int)ExitCodes.OperationCanceled;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        return (int)ExitCodes.OperationCanceled;
+                    }
+                    catch (Exception)
+                    {
+                        console.Out.WriteLine($"Monitoring exception.");
+                        return (int)ExitCodes.OperationCanceled;
                     }
 
-                }, cancellationToken);
-
-                _console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
-                {
-                    _console.WriteLine($"Monitoring cancelled.");
-                    _closing.Set();
+                    return (int)ExitCodes.SuccessfullyCompleted;
                 });
-
-                _closing.WaitOne();
-            }
-            catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-            }
-            catch (OperationCanceledException)
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-                throw;
-            }
-            catch
-            {
-                _logger.LogError("MonitorCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
         }
 
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Booster) ++options;
-                if (Device) ++options;
-                if (Display) ++options;
-                if (Error) ++options;
-                if (Fan) ++options;
-                if (Heater) ++options;
-                if (Info) ++options;
-                if (Network) ++options;
-                if (Operation) ++options;
-                if (Sensor) ++options;
-                if (System) ++options;
-                if (Technical) ++options;
-                if (Vacation) ++options;
-
-                if (Label)
-                {
-                    if (string.IsNullOrEmpty(Property))
-                    {
-                        if (!Data || (options > 0))
-                        {
-                            _console.WriteLine("Helios label option (-l|--label) can only be used with the (-a|--alldata) option or when specifying a label");
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if (!Data || (options > 0))
-                        {
-                            _console.WriteLine("Helios label option (-l|--label) can only be used with the (-a|--alldata) option or when specifying a label");
-                            return false;
-                        }
-
-                        if (!HeliosData.IsHelios(Property.ToLower()))
-                        {
-                            _logger?.LogError($"The property with Helios label '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(Property))
-                    {
-                        if ((Data && (options > 0)) || (!Data && (options != 1)))
-                        {
-                            _console.WriteLine("Please specifiy a single data option when specifying a property");
-                            return false;
-                        }
-
-                        if (Data)
-                        {
-                            if (!typeof(HeliosData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in Helios data.");
-                                return false;
-                            }
-                        }
-
-                        if (Booster)
-                        {
-                            if (!typeof(BoosterData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in booster data.");
-                                return false;
-                            }
-                        }
-
-                        if (Device)
-                        {
-                            if (!typeof(DeviceData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in device data.");
-                                return false;
-                            }
-                        }
-
-                        if (Display)
-                        {
-                            if (!typeof(DisplayData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in display data.");
-                                return false;
-                            }
-                        }
-
-                        if (Error)
-                        {
-                            if (!typeof(ErrorData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in error data.");
-                                return false;
-                            }
-                        }
-
-                        if (Fan)
-                        {
-                            if (!typeof(FanData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in fan data.");
-                                return false;
-                            }
-                        }
-
-                        if (Heater)
-                        {
-                            if (!typeof(HeaterData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in heater data.");
-                                return false;
-                            }
-                        }
-
-                        if (Info)
-                        {
-                            if (!typeof(InfoData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in info data.");
-                                return false;
-                            }
-                        }
-
-                        if (Network)
-                        {
-                            if (!typeof(NetworkData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in network data.");
-                                return false;
-                            }
-                        }
-
-                        if (Operation)
-                        {
-                            if (!typeof(OperationData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in operation data.");
-                                return false;
-                            }
-                        }
-
-                        if (Sensor)
-                        {
-                            if (!typeof(SensorData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in sensor data.");
-                                return false;
-                            }
-                        }
-
-                        if (System)
-                        {
-                            if (!typeof(SystemData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in system data.");
-                                return false;
-                            }
-                        }
-
-                        if (Technical)
-                        {
-                            if (!typeof(TechnicalData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in technical data.");
-                                return false;
-                            }
-                        }
-
-                        if (Vacation)
-                        {
-                            if (!typeof(VacationData).IsProperty(Property))
-                            {
-                                _logger?.LogError($"The property '{Property}' has not been found in vacation data.");
-                                return false;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (!Data && (options == 0))
-                        {
-                            _console.WriteLine("Please specifiy a data option.");
-                            return false;
-                        }
-
-                        if (Data && (options > 0))
-                        {
-                            _console.WriteLine("The data option overrides other data options.");
-
-                            Booster = false;
-                            Device = false;
-                            Display = false;
-                            Error = false;
-                            Fan = false;
-                            Heater = false;
-                            Info = false;
-                            Network = false;
-                            Operation = false;
-                            Sensor = false;
-                            System = false;
-                            Technical = false;
-                            Vacation = false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        #endregion
+        #endregion Constructors
 
         #region Private Methods
 
         /// <summary>
         /// Reading the specified data.
         /// </summary>
-        private void ReadingData(bool verbose = false)
+        /// <param name="console">The command line console.</param>
+        /// <param name="gateway">The gateway instance.</param>
+        /// <param name="options">The monitor options.</param>
+        /// <param name="header">The haeder flag.</param>
+        private void ReadingData(IConsole console, HeliosGateway gateway, MonitorOptions options, bool header = false)
         {
-            if (string.IsNullOrEmpty(Property))
+            if (string.IsNullOrEmpty(options.Name))
             {
-                if (Data)
+                if (options.AllData)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring Helios data.");
-                    DataStatus status = _gateway.ReadAll();
+                    if (header) console.Out.WriteLine($"Monitoring Helios data.");
+                    DataStatus status = gateway.ReadAll();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Data:");
-                        _console.WriteLine(JsonSerializer.Serialize<HeliosData>(_gateway.Data, _options));
+                        console.Out.WriteLine($"Data:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<HeliosData>(gateway.Data, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading data from Helios solar inverter.");
+                        console.Out.WriteLine($"Error reading data from Helios solar inverter.");
                     }
                 }
 
-                if (Booster)
+                if (options.Booster)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring booster data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadBoosterData();
+                    if (header) console.Out.WriteLine($"Monitoring booster data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadBoosterData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Booster:");
-                        _console.WriteLine(JsonSerializer.Serialize<BoosterData>(_gateway.BoosterData, _options));
+                        console.Out.WriteLine($"Booster:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<BoosterData>(gateway.BoosterData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading booster data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading booster data from Helios ventilation system.");
                     }
                 }
 
-                if (Device)
+                if (options.Device)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring device data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadDeviceData();
+                    if (header) console.Out.WriteLine($"Monitoring device data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadDeviceData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Device:");
-                        _console.WriteLine(JsonSerializer.Serialize<DeviceData>(_gateway.DeviceData, _options));
+                        console.Out.WriteLine($"Device:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DeviceData>(gateway.DeviceData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading device data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading device data from Helios ventilation system.");
                     }
                 }
 
-                if (Display)
+                if (options.Display)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring display data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadDisplayData();
+                    if (header) console.Out.WriteLine($"Monitoring display data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadDisplayData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Status:");
-                        _console.WriteLine(JsonSerializer.Serialize<DisplayData>(_gateway.DisplayData, _options));
+                        console.Out.WriteLine($"Status:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DisplayData>(gateway.DisplayData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading status data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading status data from Helios ventilation system.");
                     }
                 }
 
-                if (Error)
+                if (options.Error)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring error data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadErrorData();
+                    if (header) console.Out.WriteLine($"Monitoring error data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadErrorData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Error:");
-                        _console.WriteLine(JsonSerializer.Serialize<ErrorData>(_gateway.ErrorData, _options));
+                        console.Out.WriteLine($"Error:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<ErrorData>(gateway.ErrorData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading error data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading error data from Helios ventilation system.");
                     }
                 }
 
-                if (Fan)
+                if (options.Fan)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring fan data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadFanData();
+                    if (header) console.Out.WriteLine($"Monitoring fan data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadFanData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Fan:");
-                        _console.WriteLine(JsonSerializer.Serialize<FanData>(_gateway.FanData, _options));
+                        console.Out.WriteLine($"Fan:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<FanData>(gateway.FanData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading fan data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading fan data from Helios ventilation system.");
                     }
                 }
 
-                if (Heater)
+                if (options.Heater)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring heater data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadHeaterData();
+                    if (header) console.Out.WriteLine($"Monitoring heater data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadHeaterData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Heater:");
-                        _console.WriteLine(JsonSerializer.Serialize<HeaterData>(_gateway.HeaterData, _options));
+                        console.Out.WriteLine($"Heater:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<HeaterData>(gateway.HeaterData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading heater data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading heater data from Helios ventilation system.");
                     }
                 }
 
-                if (Info)
+                if (options.Info)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring info data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadInfoData();
+                    if (header) console.Out.WriteLine($"Monitoring info data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadInfoData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Info:");
-                        _console.WriteLine(JsonSerializer.Serialize<InfoData>(_gateway.InfoData, _options));
+                        console.Out.WriteLine($"Info:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<InfoData>(gateway.InfoData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading info data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading info data from Helios ventilation system.");
                     }
                 }
 
-                if (Network)
+                if (options.Network)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring network data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadNetworkData();
+                    if (header) console.Out.WriteLine($"Monitoring network data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadNetworkData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Network:");
-                        _console.WriteLine(JsonSerializer.Serialize<NetworkData>(_gateway.NetworkData, _options));
+                        console.Out.WriteLine($"Network:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<NetworkData>(gateway.NetworkData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading network data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading network data from Helios ventilation system.");
                     }
                 }
 
-                if (Operation)
+                if (options.Operation)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring operation data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadOperationData();
+                    if (header) console.Out.WriteLine($"Monitoring operation data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadOperationData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Operation:");
-                        _console.WriteLine(JsonSerializer.Serialize<OperationData>(_gateway.OperationData, _options));
+                        console.Out.WriteLine($"Operation:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<OperationData>(gateway.OperationData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading operation data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading operation data from Helios ventilation system.");
                     }
                 }
 
-                if (Sensor)
+                if (options.Sensor)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring sensor data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadSensorData();
+                    if (header) console.Out.WriteLine($"Monitoring sensor data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadSensorData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Sensor:");
-                        _console.WriteLine(JsonSerializer.Serialize<SensorData>(_gateway.SensorData, _options));
+                        console.Out.WriteLine($"Sensor:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<SensorData>(gateway.SensorData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading sensor data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading sensor data from Helios ventilation system.");
                     }
                 }
 
-                if (System)
+                if (options.System)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring system data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadSystemData();
+                    if (header) console.Out.WriteLine($"Monitoring system data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadSystemData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"System:");
-                        _console.WriteLine(JsonSerializer.Serialize<SystemData>(_gateway.SystemData, _options));
+                        console.Out.WriteLine($"System:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<SystemData>(gateway.SystemData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading system data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading system data from Helios ventilation system.");
                     }
                 }
 
-                if (Technical)
+                if (options.Technical)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring technical data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadTechnicalData();
+                    if (header) console.Out.WriteLine($"Monitoring technical data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadTechnicalData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Technical:");
-                        _console.WriteLine(JsonSerializer.Serialize<TechnicalData>(_gateway.TechnicalData, _options));
+                        console.Out.WriteLine($"Technical:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<TechnicalData>(gateway.TechnicalData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading technical data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading technical data from Helios ventilation system.");
                     }
                 }
 
-                if (Vacation)
+                if (options.Vacation)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring vacation data from Helios ventilation system.");
-                    DataStatus status = _gateway.ReadVacationData();
+                    if (header) console.Out.WriteLine($"Monitoring vacation data from Helios ventilation system.");
+                    DataStatus status = gateway.ReadVacationData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Vacation:");
-                        _console.WriteLine(JsonSerializer.Serialize<VacationData>(_gateway.VacationData, _options));
+                        console.Out.WriteLine($"Vacation:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<VacationData>(gateway.VacationData, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading vacation data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading vacation data from Helios ventilation system.");
                     }
                 }
             }
             else
             {
-                if (verbose) _console.WriteLine($"Monitoring property '{Property}':");
+                if (header) console.Out.WriteLine($"Monitoring property '{options.Name}':");
 
-                if (Data)
+                if (options.AllData)
                 {
-                    DataStatus status = _gateway.ReadAll();
+                    DataStatus status = gateway.ReadAll();
 
                     if (status.IsGood)
                     {
-                        if (Label)
+                        if (options.Label)
                         {
-                            _console.WriteLine($"Value of property '{Property}' = {_gateway.Data.GetHeliosValue(Property)}");
+                            console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Data.GetHeliosValue(options.Name)}");
                         }
                         else
                         {
-                            _console.WriteLine($"Value of property '{Property}' = {_gateway.Data.GetPropertyValue(Property)}");
+                            console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Data.GetPropertyValue(options.Name)}");
                         }
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading data from Helios solar inverter.");
+                        console.Out.WriteLine($"Error reading data from Helios solar inverter.");
                     }
                 }
 
-                if (Booster)
+                if (options.Booster)
                 {
-                    DataStatus status = _gateway.ReadBoosterData();
+                    DataStatus status = gateway.ReadBoosterData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.BoosterData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.BoosterData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading booster data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading booster data from Helios ventilation system.");
                     }
                 }
-                
-                if (Device)
+
+                if (options.Device)
                 {
-                    DataStatus status = _gateway.ReadDeviceData();
+                    DataStatus status = gateway.ReadDeviceData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.DeviceData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.DeviceData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading device data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading device data from Helios ventilation system.");
                     }
                 }
-                
-                if (Display)
+
+                if (options.Display)
                 {
-                    DataStatus status = _gateway.ReadDisplayData();
+                    DataStatus status = gateway.ReadDisplayData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.DisplayData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.DisplayData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading display data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading display data from Helios ventilation system.");
                     }
                 }
-                
-                if (Error)
+
+                if (options.Error)
                 {
-                    DataStatus status = _gateway.ReadErrorData();
+                    DataStatus status = gateway.ReadErrorData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.ErrorData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.ErrorData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading error data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading error data from Helios ventilation system.");
                     }
                 }
-                
-                if (Fan)
+
+                if (options.Fan)
                 {
-                    DataStatus status = _gateway.ReadFanData();
+                    DataStatus status = gateway.ReadFanData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.FanData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.FanData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading fan data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading fan data from Helios ventilation system.");
                     }
                 }
-                
-                if (Heater)
+
+                if (options.Heater)
                 {
-                    DataStatus status = _gateway.ReadHeaterData();
+                    DataStatus status = gateway.ReadHeaterData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.HeaterData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.HeaterData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading heater data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading heater data from Helios ventilation system.");
                     }
                 }
-                
-                if (Info)
+
+                if (options.Info)
                 {
-                    DataStatus status = _gateway.ReadInfoData();
+                    DataStatus status = gateway.ReadInfoData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.InfoData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.InfoData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading info data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading info data from Helios ventilation system.");
                     }
                 }
-                
-                if (Network)
+
+                if (options.Network)
                 {
-                    DataStatus status = _gateway.ReadNetworkData();
+                    DataStatus status = gateway.ReadNetworkData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.NetworkData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.NetworkData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading network data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading network data from Helios ventilation system.");
                     }
                 }
-                
-                if (Operation)
+
+                if (options.Operation)
                 {
-                    DataStatus status = _gateway.ReadOperationData();
+                    DataStatus status = gateway.ReadOperationData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.OperationData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.OperationData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading initial operation data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading initial operation data from Helios ventilation system.");
                     }
                 }
-                
-                if (Sensor)
+
+                if (options.Sensor)
                 {
-                    DataStatus status = _gateway.ReadSensorData();
+                    DataStatus status = gateway.ReadSensorData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.SensorData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.SensorData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading sensor data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading sensor data from Helios ventilation system.");
                     }
                 }
-                
-                if (System)
+
+                if (options.System)
                 {
-                    DataStatus status = _gateway.ReadSystemData();
+                    DataStatus status = gateway.ReadSystemData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.SystemData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.SystemData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading system data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading system data from Helios ventilation system.");
                     }
                 }
-                
-                if (Technical)
+
+                if (options.Technical)
                 {
-                    DataStatus status = _gateway.ReadTechnicalData();
+                    DataStatus status = gateway.ReadTechnicalData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.TechnicalData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.TechnicalData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading technical data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading technical data from Helios ventilation system.");
                     }
                 }
-                
-                if (Vacation)
+
+                if (options.Vacation)
                 {
-                    DataStatus status = _gateway.ReadVacationData();
+                    DataStatus status = gateway.ReadVacationData();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.VacationData.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.VacationData.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading ^vacation data from Helios ventilation system.");
+                        console.Out.WriteLine($"Error reading ^vacation data from Helios ventilation system.");
                     }
                 }
             }
         }
 
-
-        #endregion
+        #endregion Private Methods
     }
 }

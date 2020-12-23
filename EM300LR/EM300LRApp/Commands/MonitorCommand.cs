@@ -165,6 +165,10 @@ namespace EM300LRApp.Commands
         /// <summary>
         /// Reading the specified data.
         /// </summary>
+        /// <param name="console">The command line console.</param>
+        /// <param name="gateway">The gateway instance.</param>
+        /// <param name="options">The monitor options.</param>
+        /// <param name="header">The haeder flag.</param>
         private void ReadingData(IConsole console, EM300LRGateway gateway, MonitorOptions options, bool header = false)
         {
             DataStatus status = gateway.ReadAll();

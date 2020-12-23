@@ -139,7 +139,8 @@ namespace EM300LRApp.Commands
         /// <summary>
         /// Displays a list of property names.
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="console">The command line console.</param>
+        /// <param name="type">The type to be used.</param>
         private static void ShowProperties(IConsole console, Type type)
         {
             console.Out.WriteLine($"List of Properties:");
@@ -156,8 +157,9 @@ namespace EM300LRApp.Commands
         /// <summary>
         /// Displays selected property info data for a named property.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="name"></param>
+        /// <param name="console">The command line console.</param>
+        /// <param name="type">The type to be used.</param>
+        /// <param name="name">The property name</param>
         private static void ShowProperty(IConsole console, Type type, string name)
         {
             console.Out.WriteLine($"Property {name}:");

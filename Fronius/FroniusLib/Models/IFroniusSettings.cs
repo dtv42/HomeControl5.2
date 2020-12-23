@@ -15,7 +15,7 @@ namespace FroniusLib.Models
     #endregion Using Directives
 
     /// <summary>
-    /// Class holding all Fronius settings (device ID).
+    /// Interface for Fronius settings (device ID).
     /// </summary>
     public interface IFroniusSettings : IHttpClientSettings
     {

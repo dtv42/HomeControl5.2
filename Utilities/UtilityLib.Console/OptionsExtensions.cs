@@ -61,6 +61,21 @@ namespace UtilityLib.Console
             return option;
         }
 
+        public static Option<string> FromAmongIgnoreCase(this Option<string> option, params string[] values)
+        {
+            var allowedValues = (IReadOnlyCollection<string>)values.ToList().Select(v => v.ToLower());
+
+            option.Argument.AddValidator(r =>
+            {
+                var value = r.GetValueOrDefault<string>();
+                if (value is null) return $"{r.Symbol.Name} value is null";
+                if (allowedValues.Contains(value.ToLower())) return null;
+                return ValidationMessages.Instance.UnrecognizedArgument(r.Symbol.Name, allowedValues);
+            });
+
+            return option;
+        }
+
         public static Option<char> FromAmong(this Option<char> option, string values)
         {
             List<char> chars = new List<char>();

@@ -15,6 +15,7 @@ namespace UtilityApp.Commands
     using System.CommandLine;
     using System.CommandLine.IO;
     using System.CommandLine.Invocation;
+    using System.CommandLine.Parsing;
 
     using Microsoft.Extensions.Logging;
 
@@ -64,13 +65,34 @@ namespace UtilityApp.Commands
             AddOption(new Option<string>("-u", "URI value"                ).Name("uri"     ).Uri());
 
             // Setup execution handler.
-            Handler = CommandHandler.Create<IConsole, bool, ValidateOptions>((console, verbose, options) =>
+            Handler = CommandHandler.Create<IConsole, ParseResult, bool, ValidateOptions>((console, result, verbose, options) =>
             {
                 logger.LogDebug("Handler()");
 
                 if (verbose)
                 {
                     console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                    if (result.HasOption("-d")) console.Out.WriteLine("-d found: Default value");
+                    if (result.HasOption("-v")) console.Out.WriteLine("-v found: Required value");
+                    if (result.HasOption("-o")) console.Out.WriteLine("-o found: Zero or one value");
+                    if (result.HasOption("-n")) console.Out.WriteLine("-n found: Number value");
+                    if (result.HasOption("-b")) console.Out.WriteLine("-b found: Byte value [0..255]");
+                    if (result.HasOption("-i")) console.Out.WriteLine("-i found: Integer value [0..65535]");
+                    if (result.HasOption("-r")) console.Out.WriteLine("-r found: Range value [0..10]");
+                    if (result.HasOption("-l")) console.Out.WriteLine("-l found: Range value [0, 10000000]");
+
+                    if (result.HasOption("-c")) console.Out.WriteLine("-c found: Character value");
+                    if (result.HasOption("-f")) console.Out.WriteLine("-f found: Character value [A,B,C]");
+
+                    if (result.HasOption("-s")) console.Out.WriteLine("-s found: String value");
+                    if (result.HasOption("-m")) console.Out.WriteLine("-m found: String value [max: 10]");
+                    if (result.HasOption("-e")) console.Out.WriteLine("-e found: Not empty value");
+                    if (result.HasOption("-w")) console.Out.WriteLine("-w found: Not whitespace value");
+                    if (result.HasOption("-x")) console.Out.WriteLine("-x found: Regex value");
+                    if (result.HasOption("-g")) console.Out.WriteLine("-g found: Guid value");
+                    if (result.HasOption("-a")) console.Out.WriteLine("-a found: IP address value");
+                    if (result.HasOption("-p")) console.Out.WriteLine("-p found: IP endpoint value");
+                    if (result.HasOption("-u")) console.Out.WriteLine("-u found: URI value");
                     console.Out.WriteLine();
                 }
 

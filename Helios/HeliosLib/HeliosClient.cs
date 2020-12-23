@@ -12,18 +12,16 @@ namespace HeliosLib
 {
     #region Using Directives
 
-    using System;
     using System.Net.Http;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
-    using HeliosLib.Models;
 
     #endregion
 
-    public class HeliosClient : BaseClass<HeliosSettings>
+    public class HeliosClient : BaseClass
     {
         #region Private Data Members
 
@@ -41,29 +39,19 @@ namespace HeliosLib
         /// </summary>
         /// <param name="client"></param>
         /// <param name="logger"></param>
-        public HeliosClient(HttpClient client,
-                            HeliosSettings settings,
-                            ILogger<HeliosClient> logger)
-            : base(settings, logger)
+        public HeliosClient(HttpClient client, ILogger<HeliosClient> logger)
+            : base(logger)
         {
             _logger?.LogDebug($"HeliosClient()");
 
             _client = client;
             _client.DefaultRequestHeaders.Add("Accept", "application/json");
             _client.DefaultRequestHeaders.Add("User-Agent", "HeliosClient");
-
-            Update();
         }
 
         #endregion
 
         #region Public Methods
-
-        public void Update()
-        {
-            _client.BaseAddress = new Uri(_settings.BaseAddress);
-            _client.Timeout = TimeSpan.FromSeconds(_settings.Timeout);
-        }
 
         /// <summary>
         /// Helper method to perform a GET request and return the response as a string.

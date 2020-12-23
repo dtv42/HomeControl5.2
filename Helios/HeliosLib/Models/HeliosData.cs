@@ -14,6 +14,7 @@ namespace HeliosLib.Models
 
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
 
@@ -319,7 +320,15 @@ namespace HeliosLib.Models
                                     }
                                 case Type dateType when dateType == typeof(DateTime):
                                     {
-                                        if (DateTime.TryParse(value, out DateTime dateValue))
+                                        var pattern = DateFormat switch
+                                        {
+                                            DateFormats.MMDDYYYY => "MM.dd.yyyy",
+                                            DateFormats.YYYYMMDD => "yyyy.MM.dd",
+                                            DateFormats.DDMMYYYY => "dd.MM.yyyy",
+                                            _ => "dd.mm.yyyy",
+                                        };
+
+                                        if (DateTime.TryParseExact(value, pattern, null, DateTimeStyles.None, out DateTime dateValue))
                                             this.SetPropertyValue(property, dateValue);
                                         break;
                                     }

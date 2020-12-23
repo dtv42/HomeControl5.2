@@ -48,7 +48,7 @@ namespace HeliosLib.Models
     /// </summary>
     public enum DateFormats
     {
-        DDMMYY = 0,
+        DDMMYYYY = 0,
         MMDDYYYY = 1,
         YYYYMMDD = 2
     }

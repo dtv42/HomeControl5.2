@@ -12,86 +12,78 @@ namespace WallboxApp.Commands
 {
     #region Using Directives
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
+
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
-    using WallboxApp.Models;
-    using WallboxLib;
+    using UtilityLib.Console;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
-    /// Subcommand to control a device at the IKEA Trådfri gateway.
+    /// Subcommand to control a device at the BMW Wallbox charging station.
     /// </summary>
-    [Command(Name = "control",
-             FullName = "WallboxApp Control Command",
-             Description = "Controlling the BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    [Subcommand(
-        typeof(CurrentCommand),
-        typeof(EnergyCommand),
-        typeof(OutputCommand),
-        typeof(StartCommand),
-        typeof(StopCommand),
-        typeof(DisableCommand),
-        typeof(UnlockCommand))]
-    public class ControlCommand : BaseCommand<ControlCommand, AppSettings>
+    public class ControlCommand : BaseCommand
     {
-        #region Public Properties
-
-        public RootCommand? Parent { get; }
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ControlCommand"/> class.
         /// </summary>
-        /// <param name="gateway"></param>
         /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public ControlCommand(WallboxGateway gateway,
-                              IConsole console,
-                              AppSettings settings,
-                              IConfiguration config,
-                              IHostEnvironment environment,
-                              IHostApplicationLifetime lifetime,
-                              ILogger<ControlCommand> logger,
-                              CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
-        {}
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
+        /// <param name="currentCommand"></param>
+        /// <param name="energyCommand"></param>
+        /// <param name="outputCommand"></param>
+        /// <param name="startCommand"></param>
+        /// <param name="stopCommand"></param>
+        /// <param name="disableCommand"></param>
+        /// <param name="unlockCommand"></param>
+        /// <param name="logger">The logger instance.</param>
+        public ControlCommand(CurrentCommand currentCommand,
+                              EnergyCommand energyCommand,
+                              OutputCommand outputCommand,
+                              StartCommand startCommand,
+                              StopCommand stopCommand,
+                              DisableCommand disableCommand,
+                              UnlockCommand unlockCommand,
+                              ILogger<ControlCommand> logger)
+            : base(logger, "control", "Controlling the BMW Wallbox charging station.")
         {
-            _application.ShowHelp();
-            return ExitCodes.SuccessfullyCompleted;
+            logger.LogDebug("ReadCommand()");
+
+            // Adding sub commands.
+            AddCommand(currentCommand);
+            AddCommand(energyCommand);
+            AddCommand(outputCommand);
+            AddCommand(startCommand);
+            AddCommand(stopCommand);
+            AddCommand(disableCommand);
+            AddCommand(unlockCommand);
+
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions>
+                ((console, globals) =>
+                {
+                    logger.LogDebug("Handler()");
+
+                    if (globals.Verbose)
+                    {
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
+                    }
+
+                    return this.Invoke("-h");
+                });
         }
 
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-            => Parent?.CheckOptions() ?? false;
-
-        #endregion
+        #endregion  Constructors
     }
 }

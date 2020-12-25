@@ -17,7 +17,7 @@ namespace EM300LRLib.Models
     #endregion Using Directives
 
     /// <summary>
-    /// Class holding all EM300LR settings (password, and serial number).
+    /// Interface supporting all EM300LR settings (password, and serial number).
     /// </summary>
     public interface IEM300LRSettings : IHttpClientSettings
     {

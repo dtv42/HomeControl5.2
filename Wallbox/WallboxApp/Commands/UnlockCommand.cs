@@ -12,49 +12,30 @@ namespace WallboxApp.Commands
 {
     #region Using Directives
 
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using WallboxLib;
-    using WallboxApp.Models;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
-    /// Application command "control".
+    /// Application sub command "unlock".
     /// </summary>
-    [Command(Name = "unlock",
-             FullName = "Wallbox Control Command",
-             Description = "Unlocking the socket on the BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class UnlockCommand : BaseCommand<UnlockCommand, AppSettings>
+    public class UnlockCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
-        private readonly WallboxGateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="ControlCommand"/>.
-        /// </summary>
-        private ControlCommand? Parent { get; set; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("--status", Description = "Shows the data status.")]
-        public bool Status { get; }
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion
 
@@ -64,94 +45,54 @@ namespace WallboxApp.Commands
         /// Initializes a new instance of the <see cref="UnlockCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public UnlockCommand(WallboxGateway gateway,
-                             IConsole console,
-                             AppSettings settings,
-                             IConfiguration config,
-                             IHostEnvironment environment,
-                             IHostApplicationLifetime lifetime,
-                             ILogger<UnlockCommand> logger,
-                             CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public UnlockCommand(WallboxGateway gateway, ILogger<UnlockCommand> logger)
+            : base(logger, "unlock", "Unlocking the socket on the BMW Wallbox charging station.")
         {
-            _logger?.LogDebug("EnableCommand()");
+            _logger?.LogDebug("UnlockCommand()");
 
-            // Setting the Wallbox instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddOption(new Option<bool>(new string[] { "-s", "--status" }, "Shows the data status"));
 
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (!(Parent is null))
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, bool>
+                ((console, globals, status) =>
                 {
-                    if (!(Parent.Parent is null))
+                    logger.LogDebug("Handler()");
+
+                    if (globals.Verbose)
                     {
-                        // Overriding Wallbox options.
-                        _settings.EndPoint = Parent.Parent.EndPoint;
-                        _settings.Port = Parent.Parent.Port;
-
-                        if (Parent.Parent.ShowSettings)
-                        {
-                            _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-                        }
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
                     }
-                }
 
-                _console.WriteLine($"Unlock the socket on the BMW Wallbox charging station.");
+                    console.Out.WriteLine("Unlock the socket on the BMW Wallbox charging station.");
 
-                DataStatus status = _gateway.EnableCommand(0);
+                    gateway.EnableCommand(0);
 
-                if (status.IsGood)
-                {
-                    _console.WriteLine($"OK");
-                }
-                else
-                {
-                    _console.WriteLine($"Error unlocking the socket on BMW Wallbox charging station.");
-                }
+                    if (gateway.Status.IsGood)
+                    {
+                        console.Out.WriteLine("OK");
+                    }
+                    else
+                    {
+                        console.RedWriteLine("Error unlocking the socket on BMW Wallbox charging station.");
+                    }
 
-                if (Status)
-                {
-                    _console.WriteLine($"Status:");
-                    _console.WriteLine(JsonSerializer.Serialize<DataStatus>(_gateway.Status, _options));
-                }
-            }
-            catch
-            {
-                _logger.LogError("UnlockCommand exception");
-                throw;
-            }
+                    if (status)
+                    {
+                        console.Out.WriteLine($"Status:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DataStatus>(gateway.Status, _serializerOptions));
+                    }
 
-            return ExitCodes.SuccessfullyCompleted;
+                    if (gateway.Status.IsNotGood) return (int)ExitCodes.NotSuccessfullyCompleted;
+
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
-
-        #endregion
-
-        #region Private Methods
-
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-            => Parent?.CheckOptions() ?? false;
 
         #endregion
     }

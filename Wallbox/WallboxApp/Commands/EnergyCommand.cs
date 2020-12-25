@@ -12,54 +12,30 @@ namespace WallboxApp.Commands
 {
     #region Using Directives
 
-    using System.ComponentModel.DataAnnotations;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using WallboxLib;
-    using WallboxApp.Models;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
-    /// Application command "control".
+    /// Application sub command "energy".
     /// </summary>
-    [Command(Name = "energy",
-             FullName = "Wallbox Control Command",
-             Description = "Setting the energy limit on the BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class EnergyCommand : BaseCommand<EnergyCommand, AppSettings>
+    public class EnergyCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
-        private readonly WallboxGateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="ControlCommand"/>.
-        /// </summary>
-        private ControlCommand? Parent { get; set; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Argument(0, "Energy value in 0.1 Wh (0; 1 - 999999999).")]
-        [Required]
-        public uint? Energy { get; }
-
-        [Option("--status", Description = "Shows the data status.")]
-        public bool Status { get; }
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion
 
@@ -69,85 +45,60 @@ namespace WallboxApp.Commands
         /// Initializes a new instance of the <see cref="EnergyCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public EnergyCommand(WallboxGateway gateway,
-                             IConsole console,
-                             AppSettings settings,
-                             IConfiguration config,
-                             IHostEnvironment environment,
-                             IHostApplicationLifetime lifetime,
-                             ILogger<EnergyCommand> logger,
-                             CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public EnergyCommand(WallboxGateway gateway, ILogger<EnergyCommand> logger)
+            : base(logger, "energy", "Setting the energy limit on the BMW Wallbox charging station.")
         {
             _logger?.LogDebug("EnergyCommand()");
 
-            // Setting the Wallbox instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<uint?>("energy", "Energy value in 0.1 Wh (0; 1 - 999999999).   ").Arity(ArgumentArity.ExactlyOne).Name("number"));
 
-        #endregion
+            AddOption(new Option<bool>(new string[] { "-s", "--status" }, "Shows the data status"));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (!(Parent is null))
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, uint?, bool>
+                ((console, globals, energy, status) =>
                 {
-                    if (!(Parent.Parent is null))
-                    {
-                        // Overriding Wallbox options.
-                        _settings.EndPoint = Parent.Parent.EndPoint;
-                        _settings.Port = Parent.Parent.Port;
+                    logger.LogDebug("Handler()");
 
-                        if (Parent.Parent.ShowSettings)
+                    if (!CheckOptions(console, energy)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
+                    {
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
+                    }
+
+                    console.Out.WriteLine("Setting the energy charging limit on BMW Wallbox charging station.");
+
+                    if (energy.HasValue)
+                    {
+                        gateway.SetEnergy(energy.Value);
+
+                        if (gateway.Status.IsGood)
                         {
-                            _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
+                            console.Out.WriteLine("OK");
+                        }
+                        else
+                        {
+                            console.RedWriteLine("Error setting the energy charging limit on BMW Wallbox charging station.");
                         }
                     }
-                }
 
-                _console.WriteLine($"Setting the energy charging limit on BMW Wallbox charging station.");
-
-                if (Energy.HasValue)
-                {
-                    DataStatus status = _gateway.SetEnergy(Energy.Value);
-
-                    if (status.IsGood)
+                    if (status)
                     {
-                        _console.WriteLine($"OK");
+                        console.Out.WriteLine($"Status:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DataStatus>(gateway.Status, _serializerOptions));
                     }
-                    else
-                    {
-                        _console.WriteLine($"Error setting the energy charging limit on BMW Wallbox charging station.");
-                    }
-                }
 
-                if (Status)
-                {
-                    _console.WriteLine($"Status:");
-                    _console.WriteLine(JsonSerializer.Serialize<DataStatus>(_gateway.Status, _options));
-                }
-            }
-            catch
-            {
-                _logger.LogError("EnergyCommand exception");
-                throw;
-            }
+                    if (gateway.Status.IsNotGood) return (int)ExitCodes.NotSuccessfullyCompleted;
 
-            return ExitCodes.SuccessfullyCompleted;
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
 
         #endregion
@@ -158,22 +109,15 @@ namespace WallboxApp.Commands
         /// Helper method to check options.
         /// </summary>
         /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
+        public static bool CheckOptions(IConsole console, uint? energy)
         {
-            if (Parent?.CheckOptions() ?? false)
+            if (energy.HasValue)
             {
-                if (Energy.HasValue)
+                if (!WallboxGateway.IsEnergyValueOk(energy.Value))
                 {
-                    if (!_gateway.IsEnergyValueOk(Energy.Value))
-                    {
-                        _console.WriteLine($"Energy value out of bounds (0; 1..999999999).");
-                        return false;
-                    }
+                    console.RedWriteLine("Energy value out of bounds (0; 1..999999999).");
+                    return false;
                 }
-            }
-            else
-            {
-                return false;
             }
 
             return true;

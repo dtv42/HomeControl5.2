@@ -12,8 +12,11 @@ namespace WallboxWeb
 {
     #region Using Directives
 
-    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+    using System;
+    using System.Collections.Generic;
+
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;
 
     using Microsoft.Extensions.Configuration;
@@ -21,7 +24,13 @@ namespace WallboxWeb
     using Microsoft.Extensions.Hosting;
     using Microsoft.OpenApi.Models;
 
+    using HealthChecks.UI.Client;
+
+    using Serilog;
+
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using WallboxLib;
     using WallboxLib.Models;
     using WallboxWeb.Models;
@@ -34,19 +43,18 @@ namespace WallboxWeb
     public class Startup
     {
         /// <summary>
-        ///  Initializes the configuration property.
+        /// The application configuration.
         /// </summary>
-        /// <param name="configuration"></param>
+        private readonly IConfiguration _configuration;
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="Startup"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration instance.</param>
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
-
-        #region Public Properties
-
-        public IConfiguration Configuration { get; }
-
-        #endregion Public Properties
 
         /// <summary>
         ///  This method gets called by the runtime. This method adds services to the container.
@@ -54,30 +62,54 @@ namespace WallboxWeb
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions());
+            // Get application settings.
+            var settings = _configuration.GetSection("AppSettings").Get<AppSettings>();
 
-            // Adding additional services.
-            services.AddSingleton((WallboxSettings)Configuration.GetSection("AppSettings").Get<AppSettings>());
-            services.AddSingleton(Configuration.GetSection("PingSettings").Get<PingSettings>().ValidateAndThrow());
-            services.AddSingleton<WallboxClient>();
-            services.AddSingleton<WallboxGateway>();
+            services
+            // Add the gateway and ping settings.
+                .AddSingleton<IPingHealthCheckOptions>(settings.PingOptions)
+                .AddSingleton<IWallboxSettings>(settings.GatewaySettings)
 
-            // Adding Healthchecks.
-            services.AddHttpContextAccessor();
-            services.AddHealthChecks()
-                .AddCheck<StatusCheck<WallboxGateway>>("Status")
-                .AddCheck<PingCheck>("Ping");
+            // Add the named gateway Http client (supporting request error policies).
+                .AddSingleton<WallboxClient>()
 
-            // Adding Swagger support.
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
+            // Add the gateway service.           
+                .AddSingleton<WallboxGateway>()
+
+                // Configure health checks.
+                .AddHealthChecks()
+                    .AddProcessAllocatedMemoryHealthCheck(maximumMegabytesAllocated: 100, tags: new[] { "process", "memory" })
+                    .AddCheck<GatewayHealthCheck<WallboxGateway>>("gateway1", tags: new[] { "gateway" })
+                    .AddCheck<PingHealthCheck>("gateway2", tags: new[] { "gateway" })
+                ;
+
+            // Adding healthchecks UI configuring endpoints.
+            services
+                .AddHealthChecksUI(settings =>
                 {
-                    Title = "Wallbox Gatway Web API",
-                    Description = "This is a web gateway service for a BMW Wallbox charging station.",
-                    Version = "v1"
+                    settings.SetHeaderText("Wallbox Gatway - Health Checks Status");
+                    settings.AddHealthCheckEndpoint("Process", "/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                })
+                .AddInMemoryStorage()
+                ;
+
+            // Setup the default Json serialization options.
+            services
+                .AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.AddDefaultOptions())
+                ;
+
+            // Add Swagger support.
+            services
+                .AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo
+                    {
+                        Title = "Wallbox Gateway Web API",
+                        Description = "This is a web gateway service for a BMW Wallbox charging station.",
+                        Version = "v1"
+                    });
                 });
-            });
         }
 
         /// <summary>
@@ -87,12 +119,18 @@ namespace WallboxWeb
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.ApplicationServices.GetService<WallboxGateway>().Startup();
+            app.ApplicationServices.GetRequiredService<WallboxGateway>().Startup();
 
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseStaticFiles();
+
+            app.UseHealthChecks("/healthchecks");
+
+            app.UseSerilogRequestLogging();
 
             app.UseHttpsRedirection();
 
@@ -100,20 +138,33 @@ namespace WallboxWeb
 
             app.UseAuthorization();
 
-            app.UseHealthChecks("/health", new HealthCheckOptions
-            {
-                Predicate = _ => true,
-                ResponseWriter = UIResponseWriter.WriteResponse
-            });
-
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Helios Gateway API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Wallbox Gateway API V1");
             });
 
             app.UseEndpoints(endpoints =>
             {
+                // adding endpoint of health check for the health check ui in UI format
+                endpoints.MapHealthChecks("/health-gateway", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("gateway"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                endpoints.MapHealthChecks("/health-process", new HealthCheckOptions
+                {
+                    Predicate = r => r.Tags.Contains("process"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
+                // map healthcheck ui endpoint (/healthchecks-ui) and use custom style sheet.
+                endpoints.MapHealthChecksUI(setup =>
+                {
+                    setup.AddCustomStylesheet("wwwroot/css/HealthCheck.css");
+                });
+
                 endpoints.MapControllers();
             });
         }

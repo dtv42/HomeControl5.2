@@ -15,8 +15,7 @@ namespace WallboxWeb
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Extensions.Hosting;
 
-    using UtilityLib;
-    using WallboxWeb.Models;
+    using Serilog;
 
     #endregion Using Directives
 
@@ -43,8 +42,13 @@ namespace WallboxWeb
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.ConfigureBaseHost<AppSettings>()
-                              .UseStartup<Startup>();
+                    webBuilder
+                        .CaptureStartupErrors(true)
+                        .UseSerilog((context, logger) =>
+                        {
+                            logger.ReadFrom.Configuration(context.Configuration);
+                        })
+                        .UseStartup<Startup>();
                 });
     }
 }

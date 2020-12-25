@@ -12,58 +12,30 @@ namespace WallboxApp.Commands
 {
     #region Using Directives
 
-    using System.ComponentModel.DataAnnotations;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using WallboxLib;
-    using WallboxApp.Models;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
-    /// Application command "control".
+    /// Application sub command "start".
     /// </summary>
-    [Command(Name = "start",
-             FullName = "Wallbox Control Command",
-             Description = "Authorize a charging session on the BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class StartCommand : BaseCommand<StartCommand, AppSettings>
+    public class StartCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
-        private readonly WallboxGateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="ControlCommand"/>.
-        /// </summary>
-        private ControlCommand? Parent { get; set; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Argument(0, "The RFID tag (8 byte HEX string).")]
-        [Required]
-        public string Tag { get; } = string.Empty;
-
-        [Argument(1, "The RFID classifier (10 byte HEX string).")]
-        [Required]
-        public string Classifier { get; } = string.Empty;
-
-        [Option("--status", Description = "Shows the data status.")]
-        public bool Status { get; }
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion
 
@@ -73,82 +45,58 @@ namespace WallboxApp.Commands
         /// Initializes a new instance of the <see cref="StartCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public StartCommand(WallboxGateway gateway,
-                            IConsole console,
-                            AppSettings settings,
-                            IConfiguration config,
-                            IHostEnvironment environment,
-                            IHostApplicationLifetime lifetime,
-                            ILogger<StartCommand> logger,
-                            CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public StartCommand(WallboxGateway gateway, ILogger<StartCommand> logger)
+            : base(logger, "start", "Authorize a charging session on the BMW Wallbox charging station.")
         {
             _logger?.LogDebug("StartCommand()");
 
-            // Setting the Wallbox instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("tag", "The RFID tag (8 byte HEX string).").Arity(ArgumentArity.ExactlyOne).StringLength(8));
+            AddArgument(new Argument<string>("classifier", "The RFID classifier (10 byte HEX string).").Arity(ArgumentArity.ExactlyOne).StringLength(10));
 
-        #endregion
+            AddOption(new Option<bool>(new string[] { "-s", "--status" }, "Shows the data status"));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (!(Parent is null))
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, string, string, bool>
+                ((console, globals, tag, classifier, status) =>
                 {
-                    if (!(Parent.Parent is null))
+                    logger.LogDebug("Handler()");
+
+                    if (!CheckOptions(console, tag, classifier)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
                     {
-                        // Overriding Wallbox options.
-                        _settings.EndPoint = Parent.Parent.EndPoint;
-                        _settings.Port = Parent.Parent.Port;
-
-                        if (Parent.Parent.ShowSettings)
-                        {
-                            _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-                        }
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
                     }
-                }
 
-                _console.WriteLine($"authorize a charging session on BMW Wallbox charging station.");
+                    console.Out.WriteLine("Authorize a charging session on BMW Wallbox charging station.");
 
-                DataStatus status = _gateway.StartRFID(Tag, Classifier);
+                    gateway.StartRFID(tag, classifier);
 
-                if (status.IsGood)
-                {
-                    _console.WriteLine($"OK");
-                }
-                else
-                {
-                    _console.WriteLine($"Error authorizing a charging session  on BMW Wallbox charging station.");
-                }
+                    if (gateway.Status.IsGood)
+                    {
+                        console.Out.WriteLine("OK");
+                    }
+                    else
+                    {
+                        console.RedWriteLine("Error authorizing a charging session  on BMW Wallbox charging station.");
+                    }
 
-                if (Status)
-                {
-                    _console.WriteLine($"Status:");
-                    _console.WriteLine(JsonSerializer.Serialize<DataStatus>(_gateway.Status, _options));
-                }
-            }
-            catch
-            {
-                _logger.LogError("StartCommand exception");
-                throw;
-            }
+                    if (status)
+                    {
+                        console.Out.WriteLine($"Status:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DataStatus>(gateway.Status, _serializerOptions));
+                    }
 
-            return ExitCodes.SuccessfullyCompleted;
+                    if (gateway.Status.IsNotGood) return (int)ExitCodes.NotSuccessfullyCompleted;
+
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
 
         #endregion
@@ -159,24 +107,17 @@ namespace WallboxApp.Commands
         /// Helper method to check options.
         /// </summary>
         /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
+        public static bool CheckOptions(IConsole console, string tag, string classifier)
         {
-            if (Parent?.CheckOptions() ?? false)
+            if (!WallboxGateway.IsRFIDTagStringOk(tag))
             {
-                if (!_gateway.IsRFIDTagStringOk(Tag))
-                {
-                    _console.WriteLine($"Invalid RFID tag.");
-                    return false;
-                }
-
-                if (!_gateway.IsRFIDClassifierStringOk(Classifier))
-                {
-                    _console.WriteLine($"Invalid RFID classifier.");
-                    return false;
-                }
+                console.RedWriteLine("Invalid RFID tag.");
+                return false;
             }
-            else
+
+            if (!WallboxGateway.IsRFIDClassifierStringOk(classifier))
             {
+                console.RedWriteLine("Invalid RFID classifier.");
                 return false;
             }
 

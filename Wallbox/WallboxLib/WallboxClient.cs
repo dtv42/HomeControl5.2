@@ -22,12 +22,22 @@ namespace WallboxLib
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+
     using WallboxLib.Models;
 
     #endregion
 
-    public class WallboxClient : BaseClass<WallboxSettings>
+    public class WallboxClient : BaseClass
     {
+        #region Private Data Members
+
+        /// <summary>
+        /// The Udp settings.
+        /// </summary>
+        private readonly WallboxSettings _settings;
+
+        #endregion Private Data Members
+
         #region Constructors
 
         /// <summary>
@@ -35,10 +45,19 @@ namespace WallboxLib
         /// </summary>
         /// <param name="settings"></param>
         /// <param name="logger"></param>
-        public WallboxClient(WallboxSettings settings,
+        public WallboxClient(IWallboxSettings settings,
                              ILogger<WallboxClient> logger)
-            : base(settings, logger)
-        {}
+            : base(logger)
+        {
+            _logger?.LogDebug($"WallboxClient()");
+
+            _settings = new WallboxSettings()
+            {
+                EndPoint = settings.EndPoint,
+                Port = settings.Port,
+                Timeout = settings.Timeout
+            };
+        }
 
         #endregion
 
@@ -67,7 +86,7 @@ namespace WallboxLib
 
                     if (asyncResult.IsCompleted)
                     {
-                        IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, _settings.Port);
+                        IPEndPoint? remoteEP = new IPEndPoint(IPAddress.Any, _settings.Port);
                         bytes = client.EndReceive(asyncResult, ref remoteEP);
                         client.Close();
                         return Encoding.ASCII.GetString(bytes);
@@ -87,7 +106,7 @@ namespace WallboxLib
             catch (Exception ex)
             {
                 _logger?.LogError("SendReceiveAsync exception: {0}.", ex.Message);
-                throw ex;
+                throw;
             }
         }
 

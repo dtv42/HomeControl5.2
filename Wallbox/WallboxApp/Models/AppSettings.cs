@@ -12,7 +12,7 @@ namespace WallboxApp.Models
 {
     #region Using Directives
 
-    using WallboxLib.Models;
+    using WallboxApp.Options;
 
     #endregion
 
@@ -20,7 +20,8 @@ namespace WallboxApp.Models
     /// The application settings. The class contains all application settings as properties and are configured
     /// using application configuration files (e.g. appsettings.json), or environment variables.
     /// </summary>
-    public class AppSettings : WallboxSettings
+    public class AppSettings
     {
+        public GlobalOptions GlobalOptions { get; set; } = new GlobalOptions();
     }
 }

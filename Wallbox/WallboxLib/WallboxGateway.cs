@@ -23,6 +23,8 @@ namespace WallboxLib
     using Microsoft.Extensions.Logging;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using WallboxLib.Models;
 
     #endregion
@@ -32,7 +34,7 @@ namespace WallboxLib
     /// The data properties are based on the KEBA specification "KeContact P30 Charging station UDP Programmers Guide V 2.01".
     /// Document: V 2.01 / Document No.: 92651, from 10.09.2018
     /// </summary>
-    public class WallboxGateway : BaseGateway<WallboxSettings>
+    public class WallboxGateway : BaseGateway
     {
         #region Constants
 
@@ -47,6 +49,11 @@ namespace WallboxLib
         /// The instantiated UDP client.
         /// </summary>
         private readonly WallboxClient _client;
+
+        /// <summary>
+        /// The Wallbox client settings.
+        /// </summary>
+        private readonly WallboxSettings _settings;
 
         #endregion
 
@@ -112,14 +119,21 @@ namespace WallboxLib
         /// Initializes a new instance of the <see cref="WallboxGateway"/> class.
         /// </summary>
         /// <param name="client">The UDP Wallbox client.</param>
+        /// <param name="settings">The Wallbox settings.</param>
         /// <param name="logger">The application logger instance.</param>
-        /// <param name="options">The Wallbox settings.</param>
         public WallboxGateway(WallboxClient client,
-                              WallboxSettings settings,
+                              IWallboxSettings settings,
                               ILogger<WallboxGateway> logger)
-            : base(settings, logger)
+            : base(logger)
         {
             _logger?.LogDebug($"Wallbox()");
+
+            _settings = new WallboxSettings()
+            {
+                EndPoint = settings.EndPoint,
+                Port = settings.Port,
+                Timeout = settings.Timeout
+            };
 
             _client = client;
 
@@ -1207,7 +1221,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="current">The current value</param>
         /// <returns>True if current value OK</returns>
-        public bool IsReportIDOk(int id)
+        public static bool IsReportIDOk(int id)
             => ((id > REPORTS_ID) && (id <= (REPORTS_ID + MAX_REPORTS)));
 
         /// <summary>
@@ -1215,7 +1229,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="current">The current value</param>
         /// <returns>True if current value OK</returns>
-        public bool IsCurrentValueOk(uint current)
+        public static bool IsCurrentValueOk(uint current)
             => ((current == 0) || ((current >= 6000) && (current <= 63000)));
 
         /// <summary>
@@ -1223,7 +1237,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="delay">The delay value</param>
         /// <returns>True if delay value OK</returns>
-        public bool IsDelayValueOk(uint delay)
+        public static bool IsDelayValueOk(uint delay)
             => ((delay == 0) || ((delay >= 1) && (delay <= 860400)));
 
         /// <summary>
@@ -1231,7 +1245,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="energy">The energy value</param>
         /// <returns>True if energy value OK</returns>
-        public bool IsEnergyValueOk(uint energy)
+        public static bool IsEnergyValueOk(uint energy)
             => ((energy == 0) || (energy == 1) || (energy <= 999999999));
 
 
@@ -1240,7 +1254,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="tag">The tag string</param>
         /// <returns>True if tag string OK</returns>
-        public bool IsRFIDTagStringOk(string tag)
+        public static bool IsRFIDTagStringOk(string tag)
             => (!string.IsNullOrEmpty(tag) &&
                 (tag.Length == 16) &&
                 Int32.TryParse(tag, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int _));
@@ -1250,7 +1264,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="classifier">The classifier string</param>
         /// <returns>True if classifier string OK</returns>
-        public bool IsRFIDClassifierStringOk(string classifier)
+        public static bool IsRFIDClassifierStringOk(string classifier)
             => (string.IsNullOrEmpty(classifier) &&
                 (classifier.Length == 20) &&
                 Int32.TryParse(classifier, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int _));
@@ -1260,7 +1274,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="energy">The output command value</param>
         /// <returns>True if output command value OK</returns>
-        public bool IsOutputValueOk(uint command)
+        public static bool IsOutputValueOk(uint command)
             => ((command == 0) || (command == 1));
 
         /// <summary>
@@ -1268,7 +1282,7 @@ namespace WallboxLib
         /// </summary>
         /// <param name="energy">The enable modifier value</param>
         /// <returns>True if enable modifier value OK</returns>
-        public bool IsEnableValueOk(uint modifier)
+        public static bool IsEnableValueOk(uint modifier)
             => ((modifier == 0) || (modifier == 1));
 
         #endregion

@@ -13,82 +13,37 @@ namespace WallboxApp.Commands
     #region Using Directives
 
     using System;
-    using System.ComponentModel.DataAnnotations;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using WallboxLib;
     using WallboxLib.Models;
-    using WallboxApp.Models;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
     /// Application command "monitor".
     /// </summary>
-    [Command(Name = "monitor",
-             FullName = "Wallbox Monitor Command",
-             Description = "Monitoring data values from BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class MonitorCommand : BaseCommand<MonitorCommand, AppSettings>
+    public class MonitorCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
         private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-        private readonly WallboxGateway _gateway;
 
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("-1|--report1", Description = "Monitors the report 1 data.")]
-        public bool Report1 { get; }
-
-        [Option("-2|--report2", Description = "Monitors the report 2 data.")]
-        public bool Report2 { get; }
-
-        [Option("-3|--report3", Description = "Monitors the report 3 data.")]
-        public bool Report3 { get; }
-
-        [Option("-100|--report100", Description = "Monitors the last charging report data (report 100).")]
-        public bool Report100 { get; }
-
-        [Option("-n|--number <NUMBER>", Description = "Reads the specified charging report (101 - 130).")]
-        [Range(101, 130)]
-        public int? Index { get; }
-
-        [Option("-i|--info", Description = "Reads info data.")]
-        public bool Info { get; }
-
-        [Argument(0, "Monitors the named property.")]
-        public string Property { get; set; } = string.Empty;
-
-        [Option(Description = "The number of iterations (default: forever).")]
-        public uint Repeat { get; set; } = 0;
-
-        [Option(Description = "The seconds between times to read (default: 10).")]
-        public uint Seconds { get; set; } = 10;
-
-        #endregion
+        #endregion Private Data Members
 
         #region Constructors
 
@@ -96,389 +51,311 @@ namespace WallboxApp.Commands
         /// Initializes a new instance of the <see cref="MonitorCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
         /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public MonitorCommand(WallboxGateway gateway,
-                              IConsole console,
-                              AppSettings settings,
-                              IConfiguration config,
-                              IHostEnvironment environment,
-                              IHostApplicationLifetime lifetime,
-                              ILogger<MonitorCommand> logger,
-                              CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        public MonitorCommand(WallboxGateway gateway, ILogger<MonitorCommand> logger)
+            : base(logger, "monitor", "Monitoring data values from from BMW Wallbox charging station.")
         {
             _logger?.LogDebug("MonitorCommand()");
 
-            // Setting the Wallbox instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
 
-        #endregion
+            AddOption(new Option<bool>  (new string[] { "-1", "--report1" }, "Monitors the report 1 data"));
+            AddOption(new Option<bool>  (new string[] { "-2", "--report2" }, "Monitors the report 2 data"));
+            AddOption(new Option<bool>  (new string[] { "-3", "--report3" }, "Monitors the report 3 data"));
+            AddOption(new Option<ushort>(new string[] { "-n", "--number"  }, "Monitors the specified charging report data (101 - 130)").Name("number").Range(101, 130));
+            AddOption(new Option<bool>  (new string[] { "-l", "--last"    }, "Monitors the last charging report data (report 100)")); 
+            AddOption(new Option<bool>  (new string[] { "-i", "--info"    }, "Monitors the info data"));
+            AddOption(new Option<uint>  ("--repeat", "The number of iterations (default: forever)."));
+            AddOption(new Option<uint>  ("--interval", "The seconds between times to read (default: 10)."));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public async Task<int> OnExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (!(Parent is null))
-            {
-                // Overriding Wallbox options.
-                _settings.EndPoint = Parent.EndPoint;
-                _settings.Port = Parent.Port;
-
-                if (Parent.ShowSettings)
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, CancellationToken, GlobalOptions, MonitorOptions>
+                (async (console, token, globals, options) =>
                 {
-                    _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-                }
-            }
+                    logger.LogDebug("Handler()");
 
-            try
-            {
-                bool forever = (Repeat == 0);
-                bool verbose = true;
+                    if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
 
-                await Task.Factory.StartNew(async () =>
-                {
-                    while (!cancellationToken.IsCancellationRequested)
+                    if (globals.Verbose)
                     {
-                        // Read the specified data.
-                        var start = DateTime.UtcNow;
-                        ReadingData(verbose);
-                        // Only first call is verbose.
-                        verbose = false;
-                        var end = DateTime.UtcNow;
-                        double delay = ((Seconds * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
+                    }
 
-                        if (Seconds > 0)
-                        {
-                            if (delay < 0)
-                            {
-                                _logger?.LogWarning($"Monitoring: no time between reads (duration: {((end - start).TotalMilliseconds / 1000.0):F2}).");
-                            }
-                            else
-                            {
-                                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
-                            }
-                        }
+                    try
+                    {
+                        bool forever = (options.Repeat == 0);
+                        bool header = true;
 
-                        if (!forever && (--Repeat <= 0))
+                        await Task.Factory.StartNew(async () =>
                         {
+                            while (!token.IsCancellationRequested)
+                            {
+                                // Read the specified data.
+                                var start = DateTime.UtcNow;
+
+                                console.Out.WriteLine(start.ToLongTimeString());
+
+                                ReadingData(console, gateway, options, header);
+
+                                // Only first call is showing the header.
+                                header = false;
+                                var end = DateTime.UtcNow;
+                                var elapsed = (end - start).TotalMilliseconds;
+                                double delay = ((options.Interval * 1000.0) - (end - start).TotalMilliseconds) / 1000.0;
+
+                                console.Out.WriteLine($"Elapsed time: {(elapsed / 1000.0):F2}");
+
+                                if (options.Interval > 0)
+                                {
+                                    if (delay < 0)
+                                    {
+                                        console.YellowWriteLine("Monitoring: no time between reads.");
+                                    }
+                                    else
+                                    {
+                                        await Task.Delay(TimeSpan.FromSeconds(delay), token);
+                                    }
+                                }
+
+                                if (!forever && (--options.Repeat <= 0))
+                                {
+                                    _closing.Set();
+                                    break;
+                                }
+                            }
+                        }, token);
+
+                        Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
+                        {
+                            console.Out.WriteLine($"Monitoring cancelled.");
                             _closing.Set();
-                            break;
-                        }
+                        });
+
+                        _closing.WaitOne();
+                    }
+                    catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        return (int)ExitCodes.OperationCanceled;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        console.Out.WriteLine($"Monitoring cancelled.");
+                        return (int)ExitCodes.OperationCanceled;
+                    }
+                    catch (Exception)
+                    {
+                        console.Out.WriteLine($"Monitoring exception.");
+                        return (int)ExitCodes.OperationCanceled;
                     }
 
-                }, cancellationToken);
-
-                _console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
-                {
-                    _console.WriteLine($"Monitoring cancelled.");
-                    _closing.Set();
+                    return (int)ExitCodes.SuccessfullyCompleted;
                 });
-
-                _closing.WaitOne();
-            }
-            catch (AggregateException aex) when (aex.InnerExceptions.All(e => e is OperationCanceledException))
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-            }
-            catch (OperationCanceledException)
-            {
-                _console.WriteLine($"Monitoring cancelled.");
-                throw;
-            }
-            catch
-            {
-                _logger.LogError("MonitorCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
         }
 
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Report1) ++options;
-                if (Report2) ++options;
-                if (Report3) ++options;
-                if (Report100) ++options;
-                if (Index.HasValue) ++options;
-                if (Info) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single report option");
-                    _application.ShowHint();
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Report1)
-                    {
-                        if (!typeof(Report1Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Report2)
-                    {
-                        if (!typeof(Report2Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Report3)
-                    {
-                        if (!typeof(Report3Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Report100 || Index.HasValue)
-                    {
-                        if (!typeof(ReportsData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Info)
-                    {
-                        if (!typeof(InfoData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        #endregion
+        #endregion Constructors
 
         #region Private Methods
 
         /// <summary>
         /// Reading the specified data.
         /// </summary>
-        private void ReadingData(bool verbose = false)
+        /// <param name="console">The command line console.</param>
+        /// <param name="gateway">The gateway instance.</param>
+        /// <param name="options">The monitor options.</param>
+        /// <param name="header">The haeder flag.</param>
+        private void ReadingData(IConsole console, WallboxGateway gateway, MonitorOptions options, bool header = false)
         {
-            if (string.IsNullOrEmpty(Property))
+            if (string.IsNullOrEmpty(options.Name))
             {
-                if (Report1)
+                if (options.Report1)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring report 1 data.");
-                    DataStatus status = _gateway.ReadReport1();
+                    if (header) console.Out.WriteLine($"Monitoring report 1 data.");
+                    DataStatus status = gateway.ReadReport1();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Report1:");
-                        _console.WriteLine(JsonSerializer.Serialize<Report1Data>(_gateway.Report1, _options));
+                        console.Out.WriteLine($"Report1:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<Report1Data>(gateway.Report1, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 1 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 1 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Report2)
+                if (options.Report2)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring report 2 data.");
-                    DataStatus status = _gateway.ReadReport2();
+                    if (header) console.Out.WriteLine($"Monitoring report 2 data.");
+                    DataStatus status = gateway.ReadReport2();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Report2:");
-                        _console.WriteLine(JsonSerializer.Serialize<Report2Data>(_gateway.Report2, _options));
+                        console.Out.WriteLine($"Report2:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<Report2Data>(gateway.Report2, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 2 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 2 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Report3)
+                if (options.Report3)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring report 3 data.");
-                    DataStatus status = _gateway.ReadReport3();
+                    if (header) console.Out.WriteLine($"Monitoring report 3 data.");
+                    DataStatus status = gateway.ReadReport3();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Report3:");
-                        _console.WriteLine(JsonSerializer.Serialize<Report3Data>(_gateway.Report3, _options));
+                        console.Out.WriteLine($"Report3:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<Report3Data>(gateway.Report3, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 1 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 1 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Report100)
+                if (options.Last)
                 {
-                    if (verbose) _console.WriteLine($"Monitoring report 100 data.");
-                    DataStatus status = _gateway.ReadReport100();
+                    if (header) console.Out.WriteLine($"Monitoring last charging report data.");
+                    DataStatus status = gateway.ReadReport100();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Report100:");
-                        _console.WriteLine(JsonSerializer.Serialize<ReportsData>(_gateway.Report100, _options));
+                        console.Out.WriteLine($"Report100:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<ReportsData>(gateway.Report100, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 100 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 100 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Index.HasValue)
+                if (options.Number > 0)
                 {
-                    int index = Index.Value - WallboxGateway.REPORTS_ID - 1;
-                    if (verbose) _console.WriteLine($"Monitoring report {index} data.");
-                    DataStatus status = _gateway.ReadReports();
+                    int index = options.Number - WallboxGateway.REPORTS_ID - 1;
+                    if (header) console.Out.WriteLine($"Monitoring report {index} data.");
+                    DataStatus status = gateway.ReadReports();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Report{Index.Value}:");
-                        _console.WriteLine(JsonSerializer.Serialize<ReportsData>(_gateway.Reports[index], _options));
+                        console.Out.WriteLine($"Report{options.Number}:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<ReportsData>(gateway.Reports[index], _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Info)
+                if (options.Info)
                 {
-                    _console.WriteLine($"Monitoring info data from BMW Wallbox charging station.");
-                    DataStatus status = _gateway.ReadInfo();
+                    console.Out.WriteLine($"Monitoring info data from BMW Wallbox charging station.");
+                    DataStatus status = gateway.ReadInfo();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Info:");
-                        _console.WriteLine(JsonSerializer.Serialize<InfoData>(_gateway.Info, _options));
+                        console.Out.WriteLine($"Info:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<InfoData>(gateway.Info, _serializerOptions));
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading info data from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading info data from BMW Wallbox charging station.");
                     }
                 }
             }
             else
             {
-                if (verbose) _console.WriteLine($"Monitoring property '{Property}':");
+                if (header) console.Out.WriteLine($"Monitoring property '{options.Name}':");
 
-                if (Report1)
+                if (options.Report1)
                 {
-                    DataStatus status = _gateway.ReadReport1();
+                    DataStatus status = gateway.ReadReport1();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Report1.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Report1.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 1 data from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 1 data from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Report2)
+                if (options.Report2)
                 {
-                    DataStatus status = _gateway.ReadReport2();
+                    DataStatus status = gateway.ReadReport2();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Report2.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Report2.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 2 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 2 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Report3)
+                if (options.Report3)
                 {
-                    DataStatus status = _gateway.ReadReport3();
+                    DataStatus status = gateway.ReadReport3();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Report3.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Report3.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 3 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 3 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Report100)
+                if (options.Last)
                 {
-                    DataStatus status = _gateway.ReadReport100();
+                    DataStatus status = gateway.ReadReport100();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Report100.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Report100.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report 100 from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report 100 from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Index.HasValue)
+                if (options.Number > 0)
                 {
-                    int index = Index.Value - WallboxGateway.REPORTS_ID - 1;
-                    DataStatus status = _gateway.ReadReports();
+                    int index = options.Number - WallboxGateway.REPORTS_ID - 1;
+                    DataStatus status = gateway.ReadReports();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Reports[index].GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Reports[index].GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading report from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading report from BMW Wallbox charging station.");
                     }
                 }
 
-                if (Info)
+                if (options.Info)
                 {
-                    DataStatus status = _gateway.ReadInfo();
+                    DataStatus status = gateway.ReadInfo();
 
                     if (status.IsGood)
                     {
-                        _console.WriteLine($"Value of property '{Property}' = {_gateway.Info.GetPropertyValue(Property)}");
+                        console.Out.WriteLine($"Value of property '{options.Name}' = {gateway.Info.GetPropertyValue(options.Name)}");
                     }
                     else
                     {
-                        _console.WriteLine($"Error reading info data from BMW Wallbox charging station.");
+                        console.Out.WriteLine($"Error reading info data from BMW Wallbox charging station.");
                     }
                 }
             }

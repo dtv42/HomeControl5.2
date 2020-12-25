@@ -10,20 +10,20 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace WallboxWeb.Controllers
 {
+    using System.Collections.Generic;
     #region Using Directives
 
-    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
 
     using Swashbuckle.AspNetCore.Annotations;
 
     using UtilityLib;
+    using UtilityLib.Webapp;
+
     using WallboxLib;
     using WallboxLib.Models;
     using WallboxWeb.Models;
@@ -36,7 +36,7 @@ namespace WallboxWeb.Controllers
     [ApiController]
     [Route("/")]
     [Produces("application/json")]
-    public class WallboxController : BaseController<AppSettings>
+    public class WallboxController : BaseController
     {
         #region Private Fields
 
@@ -50,19 +50,11 @@ namespace WallboxWeb.Controllers
         /// Initializes a new instance of the <see cref="WallboxController"/> class.
         /// The parameters provided by dependency injection are used to set private fields.
         /// </summary>
-        /// <param name="gateway"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        public WallboxController(WallboxGateway gateway,
-                                 AppSettings settings,
-                                 IConfiguration config,
-                                 IHostEnvironment environment,
-                                 IHostApplicationLifetime lifetime,
-                                 ILogger<WallboxController> logger)
-            : base(settings, config, environment, lifetime, logger)
+        /// <param name="gateway">The EM300LR gateway instance.</param>
+        /// <param name="configuration">The application configuration instance.</param>
+        /// <param name="logger">The logger instance.</param>
+        public WallboxController(WallboxGateway gateway, IConfiguration configuration, ILogger<WallboxController> logger)
+            : base(configuration, logger)
         {
             _gateway = gateway;
         }
@@ -387,7 +379,7 @@ namespace WallboxWeb.Controllers
         {
             _logger?.LogDebug($"GetReportData({id})...");
 
-            if (!_gateway.IsReportIDOk(id))
+            if (!WallboxGateway.IsReportIDOk(id))
             {
                 _logger?.LogDebug($"GetReportData() invalid report ID.");
                 return BadRequest($"Report ID is invalid.");
@@ -693,7 +685,7 @@ namespace WallboxWeb.Controllers
         [ProducesResponseType(typeof(string), 503)]
         public async Task<IActionResult> GetReportsProperty(int id, string name, bool update = false)
         {
-            if (!_gateway.IsReportIDOk(id))
+            if (!WallboxGateway.IsReportIDOk(id))
             {
                 _logger?.LogDebug($"GetReportData() invalid report ID.");
                 return BadRequest($"Report ID is invalid.");
@@ -735,44 +727,7 @@ namespace WallboxWeb.Controllers
         /// <summary>
         /// Sets the current with delay on the BMW Wallbox charging station.
         /// </summary>
-        /// <param name="value">Current and Delay value.</param>
-        /// <returns>The action method result</returns>
-        /// <response code="202">Return indicates accepted.</response>
-        /// <response code="400">Return indicates BadRequest.</response>
-        /// <response code="404">Return indicates NotFound.</response>
-        /// <response code="409">Return indicates Conflict.</response>
-        /// <response code="500">Return indicates InternalError.</response>
-        /// <response code="502">Return indicates BadGateway.</response>
-        /// <response code="503">Return indicates Unavailable.</response>
-        [HttpPut("currtime")]
-        [SwaggerOperation(Tags = new[] { "Wallbox API" })]
-        [ProducesResponseType(202)]
-        [ProducesResponseType(typeof(string), 400)]
-        [ProducesResponseType(typeof(string), 404)]
-        [ProducesResponseType(typeof(string), 400)]
-        [ProducesResponseType(typeof(string), 404)]
-        [ProducesResponseType(typeof(string), 409)]
-        [ProducesResponseType(typeof(string), 500)]
-        [ProducesResponseType(typeof(string), 502)]
-        [ProducesResponseType(typeof(string), 503)]
-        public IActionResult SetCurrentTime([FromBody] (uint Current, uint Delay) value)
-        {
-            _logger.LogInformation($"SetCurrentTime({value.Current}, {value.Delay})");
-            if (!_gateway.IsStartupOk) return StatusCode(_gateway.Status);
-
-            if (!_gateway.IsCurrentValueOk(value.Current)) return BadRequest($"Current value '{value.Current}' invalid");
-            if (!_gateway.IsDelayValueOk(value.Delay)) return BadRequest($"Delay value '{value.Delay}' invalid");
-
-            if (_gateway.SetCurrent(value.Current, value.Delay).IsGood)
-                return Accepted();
-            else
-                return StatusCode(_gateway.Status);
-        }
-
-        /// <summary>
-        /// Sets the current on the BMW Wallbox charging station.
-        /// </summary>
-        /// <param name="value">Current value.</param>
+        /// <param name="value">Current and (optional) Delay value.</param>
         /// <returns>The action method result</returns>
         /// <response code="202">Return indicates accepted.</response>
         /// <response code="400">Return indicates BadRequest.</response>
@@ -792,17 +747,30 @@ namespace WallboxWeb.Controllers
         [ProducesResponseType(typeof(string), 500)]
         [ProducesResponseType(typeof(string), 502)]
         [ProducesResponseType(typeof(string), 503)]
-        public IActionResult SetCurrent([FromBody] uint value)
+        public IActionResult SetCurrent([FromBody] CurrentData value)
         {
-            _logger.LogInformation($"SetCurrent({value})");
+            _logger.LogInformation($"SetCurrent({value.Current}, {value.Delay})");
             if (!_gateway.IsStartupOk) return StatusCode(_gateway.Status);
 
-            if (!_gateway.IsCurrentValueOk(value)) return BadRequest($"Current value '{value}' invalid");
+            if (!WallboxGateway.IsCurrentValueOk(value.Current)) return BadRequest($"Current value '{value.Current}' invalid (0; 6000 - 63000).");
 
-            if (_gateway.SetCurrent(value).IsGood)
-                return Accepted();
+            if (value.Delay.HasValue)
+            {
+                if (!WallboxGateway.IsDelayValueOk(value.Delay.Value)) return BadRequest($"Delay value '{value.Delay}' invalid (0; 1 - 860400).");
+
+                if (_gateway.SetCurrent(value.Current, value.Delay.Value).IsGood)
+                    return Accepted();
+                else
+                    return StatusCode(_gateway.Status);
+            }
             else
-                return StatusCode(_gateway.Status);
+            {
+                if (_gateway.SetCurrent(value.Current).IsGood)
+                    return Accepted();
+                else
+                    return StatusCode(_gateway.Status);
+
+            }
         }
 
         /// <summary>
@@ -833,7 +801,7 @@ namespace WallboxWeb.Controllers
             _logger.LogInformation($"SetEnergy({value})");
             if (!_gateway.IsStartupOk) return StatusCode(_gateway.Status);
 
-            if (!_gateway.IsEnergyValueOk(value)) return BadRequest($"Energy value '{value}' invalid");
+            if (!WallboxGateway.IsEnergyValueOk(value)) return BadRequest($"Energy value '{value}' invalid (0; 1..999999999).");
 
             if (_gateway.SetEnergy(value).IsGood)
                 return Accepted();
@@ -870,8 +838,8 @@ namespace WallboxWeb.Controllers
             _logger.LogInformation($"StartCommand({tag}, {classifier})");
 
             if (!_gateway.IsStartupOk) return StatusCode(_gateway.Status);
-            if (!_gateway.IsRFIDTagStringOk(tag)) return BadRequest($"RFID tag invalid");
-            if (!_gateway.IsRFIDClassifierStringOk(classifier)) return BadRequest($"RFID classifier invalid");
+            if (!WallboxGateway.IsRFIDTagStringOk(tag)) return BadRequest($"RFID tag invalid");
+            if (!WallboxGateway.IsRFIDClassifierStringOk(classifier)) return BadRequest($"RFID classifier invalid");
 
             if (_gateway.StartRFID(tag, classifier).IsGood)
                 return Accepted();
@@ -907,7 +875,7 @@ namespace WallboxWeb.Controllers
             _logger.LogInformation($"StopCommand({tag})");
 
             if (!_gateway.IsStartupOk) return StatusCode(_gateway.Status);
-            if (!_gateway.IsRFIDTagStringOk(tag)) return BadRequest($"RFID tag invalid");
+            if (!WallboxGateway.IsRFIDTagStringOk(tag)) return BadRequest($"RFID tag invalid");
 
             if (_gateway.StopRFID(tag).IsGood)
                 return Accepted();

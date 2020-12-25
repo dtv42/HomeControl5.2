@@ -14,285 +14,178 @@ namespace WallboxApp.Commands
 
     using System;
     using System.Collections.Generic;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Linq;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using WallboxLib.Models;
-    using WallboxApp.Models;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
     /// Application command "info".
     /// </summary>
-    [Command(Name = "info",
-             FullName = "Wallbox Info Command",
-             Description = "Reading data values from BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class InfoCommand : BaseCommand<InfoCommand, AppSettings>
+    public class InfoCommand : BaseCommand
     {
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="RootCommand"/>.
-        /// </summary>
-        private RootCommand? Parent { get; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Option("-1|--report1", Description = "Shows the report 1 data.")]
-        public bool Report1 { get; }
-
-        [Option("-2|--report2", Description = "Shows the report 2 data.")]
-        public bool Report2 { get; }
-
-        [Option("-3|--report3", Description = "Shows the report 3 data.")]
-        public bool Report3 { get; }
-
-        [Option("-r|--reports", Description = "Shows the charging report data (e.g. report 100 - 130).")]
-        public bool Reports { get; }
-
-        [Option("-i|--info", Description = "Shows the info data.")]
-        public bool Info { get; }
-
-        [Argument(0, Description = "Specify the named property.")]
-        public string Property { get; } = string.Empty;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InfoCommand"/> class.
+        ///  Initializes a new instance of the <see cref="InfoCommand"/> class.
         /// </summary>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public InfoCommand(IConsole console,
-                           AppSettings settings,
-                           IConfiguration config,
-                           IHostEnvironment environment,
-                           IHostApplicationLifetime lifetime,
-                           ILogger<InfoCommand> logger,
-                           CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public InfoCommand(ILogger<InfoCommand> logger)
+            : base(logger, "info", "Showing data info from BMW Wallbox charging station.")
         {
-            _logger?.LogDebug("InfoCommand()");
+            logger.LogDebug("InfoCommand()");
+
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
+
+            AddOption(new Option<bool>(new string[] { "-1", "--report1" }, "Gets the report 1 data info."));
+            AddOption(new Option<bool>(new string[] { "-2", "--report2" }, "Gets the report 2 data info."));
+            AddOption(new Option<bool>(new string[] { "-3", "--report3" }, "Gets the report 3 data info."));
+            AddOption(new Option<bool>(new string[] { "-r", "--reports" }, "Gets the charging report data info (e.g. report 100 - 130)."));
+            AddOption(new Option<bool>(new string[] { "-i", "--info"    }, "Gets the infodata info"));
+
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, InfoOptions>
+                ((console, globals, options) =>
+                {
+                    logger.LogDebug("Handler()");
+
+                    if (!options.CheckOptions(console)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
+                    {
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine();
+                    }
+
+                    if (string.IsNullOrEmpty(options.Name))
+                    {
+                        if (options.Report1)
+                        {
+                            console.Out.WriteLine($"Report1:");
+                            ShowProperties(console, typeof(Report1Data));
+                        }
+
+                        if (options.Report2)
+                        {
+                            console.Out.WriteLine($"Report2:");
+                            ShowProperties(console, typeof(Report2Data));
+                        }
+
+                        if (options.Report3)
+                        {
+                            console.Out.WriteLine($"Report3:");
+                            ShowProperties(console, typeof(Report3Data));
+                        }
+
+                        if (options.Reports)
+                        {
+                            console.Out.WriteLine($"Report100:");
+                            ShowProperties(console, typeof(ReportsData));
+                        }
+
+                        if (options.Info)
+                        {
+                            console.Out.WriteLine($"Info:");
+                            ShowProperties(console, typeof(InfoData));
+                        }
+                    }
+                    else
+                    {
+                        if (options.Report1)
+                        {
+                            ShowProperty(console, typeof(Report1Data), options.Name);
+                        }
+
+                        if (options.Report2)
+                        {
+                            ShowProperty(console, typeof(Report2Data), options.Name);
+                        }
+
+                        if (options.Report3)
+                        {
+                            ShowProperty(console, typeof(Report3Data), options.Name);
+                        }
+
+                        if (options.Reports)
+                        {
+                            ShowProperty(console, typeof(ReportsData), options.Name);
+                        }
+
+                        if (options.Info)
+                        {
+                            ShowProperty(console, typeof(InfoData), options.Name);
+                        }
+                    }
+
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
 
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(Property))
-                {
-                    if (Report1)
-                    {
-                        _console.WriteLine($"Report1:");
-                        ShowProperties(typeof(Report1Data));
-                    }
-
-                    if (Report2)
-                    {
-                        _console.WriteLine($"Report1:");
-                        ShowProperties(typeof(Report2Data));
-                    }
-
-                    if (Report3)
-                    {
-                        _console.WriteLine($"Report1:");
-                        ShowProperties(typeof(Report3Data));
-                    }
-
-                    if (Reports)
-                    {
-                        _console.WriteLine($"Report100:");
-                        ShowProperties(typeof(ReportsData));
-                    }
-
-                    if (Info)
-                    {
-                        _console.WriteLine($"Info:");
-                        ShowProperties(typeof(InfoData));
-                    }
-                }
-                else
-                {
-                    if (Report1)
-                    {
-                        ShowProperty(typeof(Report1Data), Property);
-                    }
-
-                    if (Report2)
-                    {
-                        ShowProperty(typeof(Report2Data), Property);
-                    }
-
-                    if (Report3)
-                    {
-                        ShowProperty(typeof(Report3Data), Property);
-                    }
-
-                    if (Reports)
-                    {
-                        ShowProperty(typeof(ReportsData), Property);
-                    }
-
-                    if (Info)
-                    {
-                        ShowProperty(typeof(InfoData), Property);
-                    }
-                }
-            }
-            catch
-            {
-                _logger.LogError("ReadCommand exception");
-                throw;
-            }
-
-            return ExitCodes.SuccessfullyCompleted;
-        }
-
-        #endregion
+        #endregion Constructors
 
         #region Private Methods
 
         /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                int options = 0;
-
-                if (Report1) ++options;
-                if (Report2) ++options;
-                if (Report3) ++options;
-                if (Reports) ++options;
-
-                if (options != 1)
-                {
-                    _console.WriteLine("Please specifiy a single data option");
-                    _application.ShowHint();
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(Property))
-                {
-                    if (Report1)
-                    {
-                        if (!typeof(Report1Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Report2)
-                    {
-                        if (!typeof(Report2Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Report3)
-                    {
-                        if (!typeof(Report3Data).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-
-                    if (Reports)
-                    {
-                        if (!typeof(ReportsData).IsProperty(Property))
-                        {
-                            _logger?.LogError($"The property '{Property}' has not been found.");
-                            return false;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Displays a list of property names.
         /// </summary>
-        /// <param name="type"></param>
-        private void ShowProperties(Type type)
+        /// <param name="console">The command line console.</param>
+        /// <param name="type">The type to be used.</param>
+        private static void ShowProperties(IConsole console, Type type)
         {
-            _console.WriteLine($"List of Properties:");
+            console.Out.WriteLine($"List of Properties:");
             var names = type.GetProperties().Select(p => p.Name);
 
             foreach (var name in names)
             {
-                _console.WriteLine($"    {name}");
+                console.Out.WriteLine($"    {name}");
             }
 
-            _console.WriteLine();
+            console.Out.WriteLine();
         }
 
         /// <summary>
         /// Displays selected property info data for a named property.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="name"></param>
-        private void ShowProperty(Type type, string name)
+        /// <param name="console">The command line console.</param>
+        /// <param name="type">The type to be used.</param>
+        /// <param name="name">The property name</param>
+        private static void ShowProperty(IConsole console, Type type, string name)
         {
-            _console.WriteLine($"Property {name}:");
+            console.Out.WriteLine($"Property {name}:");
             var info = type.GetProperty(name);
             var pType = info?.PropertyType;
 
-            _console.WriteLine($"   IsProperty:    {!(info is null)}");
-            _console.WriteLine($"   CanRead:       {info?.CanRead}");
-            _console.WriteLine($"   CanWrite:      {info?.CanWrite}");
+            console.Out.WriteLine($"   IsProperty:    {!(info is null)}");
+            console.Out.WriteLine($"   CanRead:       {info?.CanRead}");
+            console.Out.WriteLine($"   CanWrite:      {info?.CanWrite}");
 
             if (info?.PropertyType.IsArray ?? false)
             {
-                _console.WriteLine($"   IsArray:       {pType?.IsArray}");
-                _console.WriteLine($"   ElementType:   {pType?.GetElementType()}");
+                console.Out.WriteLine($"   IsArray:       {pType?.IsArray}");
+                console.Out.WriteLine($"   ElementType:   {pType?.GetElementType()}");
             }
             else if ((pType?.IsGenericType ?? false) && (pType?.GetGenericTypeDefinition() == typeof(List<>)))
             {
-                _console.WriteLine($"   IsList:        List<ItempType>");
-                _console.WriteLine($"   ItemType:      {pType?.GetGenericArguments().Single()}");
+                console.Out.WriteLine($"   IsList:        List<ItempType>");
+                console.Out.WriteLine($"   ItemType:      {pType?.GetGenericArguments().Single()}");
             }
             else
             {
-                _console.WriteLine($"   PropertyType:  {pType?.Name}");
+                console.Out.WriteLine($"   PropertyType:  {pType?.Name}");
             }
-            _console.WriteLine();
+            console.Out.WriteLine();
         }
 
         #endregion

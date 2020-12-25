@@ -12,175 +12,91 @@ namespace WallboxApp.Commands
 {
     #region Using Directives
 
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
-
-    using McMaster.Extensions.CommandLineUtils;
 
     using UtilityLib;
-    using WallboxLib;
-    using WallboxLib.Models;
+    using UtilityLib.Console;
 
-    using WallboxApp.Models;
-    using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
+    using WallboxLib;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
-    /// Application command "control".
+    /// Application sub command "output".
     /// </summary>
-    [Command(Name = "output",
-             FullName = "Wallbox Control Command",
-             Description = "Setting the output on the BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class OutputCommand : BaseCommand<OutputCommand, AppSettings>
+    public class OutputCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
-        private readonly WallboxGateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="ControlCommand"/>.
-        /// </summary>
-        private ControlCommand? Parent { get; set; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Argument(0, "Output value (0: Close; 1: Open).")]
-        [Required]
-        public ushort? Output { get; }
-
-        [Option("--status", Description = "Shows the data status.")]
-        public bool Status { get; }
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion
 
         #region Constructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OutputCommand"/> class.
+        /// Initializes a new instance of the <see cref="CurrentCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public OutputCommand(WallboxGateway gateway,
-                             IConsole console,
-                             AppSettings settings,
-                             IConfiguration config,
-                             IHostEnvironment environment,
-                             IHostApplicationLifetime lifetime,
-                             ILogger<OutputCommand> logger,
-                             CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public OutputCommand(WallboxGateway gateway, ILogger<OutputCommand> logger)
+            : base(logger, "output", "Setting the output on the BMW Wallbox charging station.")
         {
             _logger?.LogDebug("OutputCommand()");
 
-            // Setting the Wallbox instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<ushort?>("output", "Output value (0: Close; 1: Open).").Arity(ArgumentArity.ExactlyOne).FromAmong(0,1));
 
-        #endregion
+            AddOption(new Option<bool>(new string[] { "-s", "--status" }, "Shows the data status"));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (!(Parent is null))
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, ushort?, bool>
+                ((console, globals, output, status) =>
                 {
-                    if (!(Parent.Parent is null))
-                    {
-                        // Overriding Wallbox options.
-                        _settings.EndPoint = Parent.Parent.EndPoint;
-                        _settings.Port = Parent.Parent.Port;
+                    logger.LogDebug("Handler()");
 
-                        if (Parent.Parent.ShowSettings)
+                    if (globals.Verbose)
+                    {
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
+                    }
+
+                    console.Out.WriteLine("Setting the output relay on BMW Wallbox charging station.");
+
+                    if (output.HasValue)
+                    {
+                        gateway.SetOutput(output.Value);
+
+                        if (gateway.Status.IsGood)
                         {
-                            _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
+                            console.Out.WriteLine("OK");
+                        }
+                        else
+                        {
+                            console.Out.WriteLine("Error the output relay on BMW Wallbox charging station.");
                         }
                     }
-                }
 
-                _console.WriteLine($"Setting the output relay on BMW Wallbox charging station.");
-
-                if (Output.HasValue)
-                {
-                    DataStatus status = _gateway.SetOutput(Output.Value);
-
-                    if (status.IsGood)
+                    if (status)
                     {
-                        _console.WriteLine($"OK");
+                        console.Out.WriteLine("Status:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DataStatus>(gateway.Status, _serializerOptions));
                     }
-                    else
-                    {
-                        _console.WriteLine($"Error the output relay on BMW Wallbox charging station.");
-                    }
-                }
 
-                if (Status)
-                {
-                    _console.WriteLine($"Status:");
-                    _console.WriteLine(JsonSerializer.Serialize<DataStatus>(_gateway.Status, _options));
-                }
-            }
-            catch
-            {
-                _logger.LogError("OutputCommand exception");
-                throw;
-            }
+                    if (gateway.Status.IsNotGood) return (int)ExitCodes.NotSuccessfullyCompleted;
 
-            return ExitCodes.SuccessfullyCompleted;
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        /// <summary>
-        /// Helper method to check options.
-        /// </summary>
-        /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
-        {
-            if (Parent?.CheckOptions() ?? false)
-            {
-                if (Output.HasValue)
-                {
-                    if (!_gateway.IsOutputValueOk(Output.Value))
-                    {
-                        _console.WriteLine($"Output value out of bounds (0, 1).");
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
 
         #endregion

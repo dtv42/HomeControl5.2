@@ -8,58 +8,35 @@
 // <created>26-4-2020 20:18</created>
 // <author>Peter Trimmel</author>
 // --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 namespace WallboxApp.Commands
 {
     #region Using Directives
 
-    using System.ComponentModel.DataAnnotations;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.IO;
     using System.Text.Json;
 
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    using McMaster.Extensions.CommandLineUtils;
-
     using UtilityLib;
+    using UtilityLib.Console;
+
     using WallboxLib;
-    using WallboxApp.Models;
+
+    using WallboxApp.Options;
 
     #endregion
 
     /// <summary>
-    /// Application command "control".
+    /// Application sub command "stop".
     /// </summary>
-    [Command(Name = "stop",
-             FullName = "Wallbox Control Command",
-             Description = "Deauthorize a charching session on the BMW Wallbox charging station.",
-             ExtendedHelpText = "\nCopyright (c) 2020 Dr. Peter Trimmel - All rights reserved.")]
-    public class StopCommand : BaseCommand<StopCommand, AppSettings>
+    public class StopCommand : BaseCommand
     {
         #region Private Data Members
 
-        private readonly JsonSerializerOptions _options = JsonExtensions.DefaultSerializerOptions;
-        private readonly WallboxGateway _gateway;
-
-        #endregion
-
-        #region Private Properties
-
-        /// <summary>
-        /// This is a reference to the parent command <see cref="ControlCommand"/>.
-        /// </summary>
-        private ControlCommand? Parent { get; set; }
-
-        #endregion
-
-        #region Public Properties
-
-        [Argument(0, "The RFID tag (8 byte HEX string).")]
-        [Required]
-        public string Tag { get; } = string.Empty;
-
-        [Option("--status", Description = "Shows the data status.")]
-        public bool Status { get; }
+        private readonly JsonSerializerOptions _serializerOptions = JsonExtensions.DefaultSerializerOptions;
 
         #endregion
 
@@ -69,82 +46,57 @@ namespace WallboxApp.Commands
         /// Initializes a new instance of the <see cref="StopCommand"/> class.
         /// </summary>
         /// <param name="gateway"></param>
-        /// <param name="console"></param>
-        /// <param name="settings"></param>
-        /// <param name="config"></param>
-        /// <param name="environment"></param>
-        /// <param name="lifetime"></param>
-        /// <param name="logger"></param>
-        /// <param name="application"></param>
-        public StopCommand(WallboxGateway gateway,
-                           IConsole console,
-                           AppSettings settings,
-                           IConfiguration config,
-                           IHostEnvironment environment,
-                           IHostApplicationLifetime lifetime,
-                           ILogger<StopCommand> logger,
-                           CommandLineApplication application)
-            : base(console, settings, config, environment, lifetime, logger, application)
+        /// <param name="logger">The logger instance.</param>
+        public StopCommand(WallboxGateway gateway, ILogger<StopCommand> logger)
+            : base(logger, "stop", "Authorize a charging session on the BMW Wallbox charging station.")
         {
             _logger?.LogDebug("StopCommand()");
 
-            // Setting the Wallbox instance.
-            _gateway = gateway;
-        }
+            // Setup command arguments and options.
+            AddArgument(new Argument<string>("tag", "The RFID tag (8 byte HEX string).").Arity(ArgumentArity.ExactlyOne).StringLength(8));
 
-        #endregion
+            AddOption(new Option<bool>(new string[] { "-s", "--status" }, "Shows the data status"));
 
-        #region Public Methods
-
-        /// <summary>
-        /// Runs when the commandline application command is executed.
-        /// </summary>
-        /// <returns>The exit code</returns>
-        public int OnExecute()
-        {
-            try
-            {
-                if (!(Parent is null))
+            // Setup execution handler.
+            Handler = CommandHandler.Create<IConsole, GlobalOptions, string, bool>
+                ((console, globals, tag, status) =>
                 {
-                    if (!(Parent.Parent is null))
+                    logger.LogDebug("Handler()");
+
+                    if (!CheckOptions(console, tag)) return (int)ExitCodes.IncorrectFunction;
+
+                    if (globals.Verbose)
                     {
-                        // Overriding Wallbox options.
-                        _settings.EndPoint = Parent.Parent.EndPoint;
-                        _settings.Port = Parent.Parent.Port;
-
-                        if (Parent.Parent.ShowSettings)
-                        {
-                            _console.WriteLine(JsonSerializer.Serialize<AppSettings>(_settings, _options));
-                        }
+                        console.Out.WriteLine($"Commandline Application: {RootCommand.ExecutableName}");
+                        console.Out.WriteLine($"Endpoint:  {globals.EndPoint}");
+                        console.Out.WriteLine($"Port:      {globals.Port}");
+                        console.Out.WriteLine($"Timeout:   {globals.Timeout}");
+                        console.Out.WriteLine();
                     }
-                }
 
-                _console.WriteLine($"deauthorize a charging session on BMW Wallbox charging station.");
+                    console.Out.WriteLine("Deauthorize a charging session on BMW Wallbox charging station.");
 
-                DataStatus status = _gateway.StopRFID(Tag);
+                    gateway.StopRFID(tag);
 
-                if (status.IsGood)
-                {
-                    _console.WriteLine($"OK");
-                }
-                else
-                {
-                    _console.WriteLine($"Error deauthorizing a charging session  on BMW Wallbox charging station.");
-                }
+                    if (gateway.Status.IsGood)
+                    {
+                        console.Out.WriteLine("OK");
+                    }
+                    else
+                    {
+                        console.RedWriteLine("Error deauthorizing a charging session  on BMW Wallbox charging station.");
+                    }
 
-                if (Status)
-                {
-                    _console.WriteLine($"Status:");
-                    _console.WriteLine(JsonSerializer.Serialize<DataStatus>(_gateway.Status, _options));
-                }
-            }
-            catch
-            {
-                _logger.LogError("StopCommand exception");
-                throw;
-            }
+                    if (status)
+                    {
+                        console.Out.WriteLine($"Status:");
+                        console.Out.WriteLine(JsonSerializer.Serialize<DataStatus>(gateway.Status, _serializerOptions));
+                    }
 
-            return ExitCodes.SuccessfullyCompleted;
+                    if (gateway.Status.IsNotGood) return (int)ExitCodes.NotSuccessfullyCompleted;
+
+                    return (int)ExitCodes.SuccessfullyCompleted;
+                });
         }
 
         #endregion
@@ -155,18 +107,11 @@ namespace WallboxApp.Commands
         /// Helper method to check options.
         /// </summary>
         /// <returns>True if options are OK.</returns>
-        public override bool CheckOptions()
+        public static bool CheckOptions(IConsole console, string tag)
         {
-            if (Parent?.CheckOptions() ?? false)
+            if (!WallboxGateway.IsRFIDTagStringOk(tag))
             {
-                if (!_gateway.IsRFIDTagStringOk(Tag))
-                {
-                    _console.WriteLine($"Invalid RFID tag.");
-                    return false;
-                }
-            }
-            else
-            {
+                console.RedWriteLine("Invalid RFID tag.");
                 return false;
             }
 

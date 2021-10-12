@@ -10,7 +10,7 @@
     <Description>Fronius gateway application.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>..\..</DockerfileContext>
+    <DockerfileContext>..\..</DockerfileContext> 
   </PropertyGroup>
 
   <ItemGroup>

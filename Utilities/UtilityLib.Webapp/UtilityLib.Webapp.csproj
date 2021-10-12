@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
+    <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" /> 
   </ItemGroup>
 
 </Project>

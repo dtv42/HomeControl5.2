@@ -9,7 +9,7 @@
     <Company />
     <Description>Netatmo console application.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
-    <UserSecretsId>4038d1a4-876b-4a77-b52a-6f1970106e99</UserSecretsId>
+    <UserSecretsId>4038d1a4-876b-4a77-b52a-6f1970106e99</UserSecretsId> 
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">

@@ -10,7 +10,7 @@
     <None Remove="appsettings.json" />
     <None Remove="xunit.runner.json" />
   </ItemGroup>
-
+ 
   <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

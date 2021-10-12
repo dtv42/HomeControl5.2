@@ -8,7 +8,7 @@
     <Authors>Dr. Peter Trimmel</Authors>
     <Company />
     <Description>Modbus console application.</Description>
-    <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
+    <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright> 
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,7 +9,7 @@
     <Company />
     <Description>ETAPU11 console application.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <ItemGroup>
     <None Remove="appsettings.json" />

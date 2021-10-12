@@ -8,7 +8,7 @@
     <Company />
     <Description>Fronius library.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <ItemGroup>
     <ProjectReference Include="..\..\Utilities\UtilityLib.Webapp\UtilityLib.Webapp.csproj" />

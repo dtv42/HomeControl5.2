@@ -12,7 +12,7 @@
     <PackageReference Include="System.CommandLine.Rendering" Version="0.3.0-alpha.20574.7" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup> 
     <ProjectReference Include="..\UtilityLib\UtilityLib.csproj" />
   </ItemGroup>
 

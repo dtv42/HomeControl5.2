@@ -9,7 +9,7 @@
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="xunit.runner.json" />
-  </ItemGroup>
+  </ItemGroup> 
 
   <ItemGroup>
     <Content Include="appsettings.json">

@@ -9,7 +9,7 @@
     <Company />
     <Description>Helios console application.</Description>
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
-    <UserSecretsId>fbd5260b-0eba-4666-acf1-271d001d37c7</UserSecretsId>
+    <UserSecretsId>fbd5260b-0eba-4666-acf1-271d001d37c7</UserSecretsId> 
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">

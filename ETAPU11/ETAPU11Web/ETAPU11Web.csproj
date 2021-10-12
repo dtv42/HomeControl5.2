@@ -12,7 +12,7 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
     <UserSecretsId>02496698-3011-4c81-b17a-230f57124a64</UserSecretsId>
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.System" Version="3.1.2" />

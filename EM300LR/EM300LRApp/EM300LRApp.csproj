@@ -11,7 +11,7 @@
     <Copyright>Copyright (c) 2020 Dr. Peter Trimmel</Copyright>
     <UserSecretsId>6ca7ecb3-0837-401c-b61c-1b77dc19c956</UserSecretsId>
   </PropertyGroup>
-
+ 
   <PropertyGroup Condition=" '$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">
     <EnvironmentName>Development</EnvironmentName>
   </PropertyGroup>

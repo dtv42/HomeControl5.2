@@ -24,7 +24,7 @@
     public class TestWeb : IClassFixture<WebApplicationFactory<HeliosWeb.Startup>>
     {
         private readonly WebApplicationFactory<HeliosWeb.Startup> _factory;
-        private readonly JsonSerializerOptions _options = new JsonSerializerOptions();
+        private readonly JsonSerializerOptions _options = new();
 
         public TestWeb(WebApplicationFactory<HeliosWeb.Startup> factory)
         {

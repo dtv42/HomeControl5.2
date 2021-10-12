@@ -25,7 +25,7 @@
     public class TestWeb : IClassFixture<WebApplicationFactory<FroniusWeb.Startup>>
     {
         private readonly WebApplicationFactory<FroniusWeb.Startup> _factory;
-        private readonly JsonSerializerOptions _options = new JsonSerializerOptions();
+        private readonly JsonSerializerOptions _options = new();
 
         public TestWeb(WebApplicationFactory<FroniusWeb.Startup> factory)
         {

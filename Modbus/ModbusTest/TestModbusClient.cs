@@ -35,7 +35,7 @@ namespace ModbusTest
         private const int MODBUS_PORT = 502;
         private const byte MODBUS_SLAVE = 1;
 
-        private readonly TcpClientSettings _settings = new TcpClientSettings()
+        private readonly TcpClientSettings _settings = new()
         {
             TcpSlave = new TcpSlaveData()
             {

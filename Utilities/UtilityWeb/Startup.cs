@@ -60,7 +60,10 @@ namespace UtilityWeb
             var settings = _configuration.GetSection("AppSettings").Get<AppSettings>();
             var gateway = settings.GatewaySettings;
 
+            // Add the gateway settings.
             services
+                .AddSingleton<IWebGatewaySettings>(gateway)
+    
             // Add the named gateway Http client (supporting request error policies).
                .AddPollyHttpClient("Gateway", gateway.Retries, gateway.Wait,
                    client =>

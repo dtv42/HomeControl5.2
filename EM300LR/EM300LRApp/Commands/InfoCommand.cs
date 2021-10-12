@@ -48,11 +48,11 @@ namespace EM300LRApp.Commands
             // Setup command arguments and options.
             AddArgument(new Argument<string>("name", "The property name.").Arity(ArgumentArity.ZeroOrOne));
 
-            AddOption(new Option<bool>(new string[] { "-d", "--data"   }, "Gets all data"        ));
-            AddOption(new Option<bool>(new string[] { "-t", "--total"  }, "Gets the total data"  ));
-            AddOption(new Option<bool>(new string[] { "-1", "--phase1" }, "Gets the phase 1 data"));
-            AddOption(new Option<bool>(new string[] { "-2", "--phase2" }, "Gets the phase 2 data"));
-            AddOption(new Option<bool>(new string[] { "-3", "--phase3" }, "Gets the phase 3 data"));
+            AddOption(new Option<bool>(new string[] { "-d", "--data"   }, "Shows all data info"));
+            AddOption(new Option<bool>(new string[] { "-t", "--total"  }, "Shows the total data info"));
+            AddOption(new Option<bool>(new string[] { "-1", "--phase1" }, "Shows the phase 1 data info"));
+            AddOption(new Option<bool>(new string[] { "-2", "--phase2" }, "Shows the phase 2 data info"));
+            AddOption(new Option<bool>(new string[] { "-3", "--phase3" }, "Shows the phase 3 data info"));
 
             // Setup execution handler.
             Handler = CommandHandler.Create<IConsole, GlobalOptions, InfoOptions>

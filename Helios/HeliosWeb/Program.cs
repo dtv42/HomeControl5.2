@@ -12,6 +12,8 @@ namespace HeliosWeb
 {
     #region Using Directives
 
+    using System.Net;
+
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Extensions.Hosting;
 
@@ -48,7 +50,12 @@ namespace HeliosWeb
                         {
                             logger.ReadFrom.Configuration(context.Configuration);
                         })
-                        .UseStartup<Startup>();
+                        .UseStartup<Startup>()
+                        .UseKestrel(opts =>
+                        {
+                            opts.Listen(IPAddress.Loopback, port: 8003);
+                            opts.ListenAnyIP(8003);
+                        });
                 });
     }
 }

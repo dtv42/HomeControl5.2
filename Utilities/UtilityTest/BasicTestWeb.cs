@@ -32,7 +32,7 @@ namespace UtilityTest
     public class BasicTestWeb : IClassFixture<WebApplicationFactory<UtilityWeb.Startup>>
     {
         private readonly WebApplicationFactory<UtilityWeb.Startup> _factory;
-        private readonly JsonSerializerOptions _options = new JsonSerializerOptions();
+        private readonly JsonSerializerOptions _options = new();
 
         public BasicTestWeb(WebApplicationFactory<UtilityWeb.Startup> factory)
         {

@@ -99,9 +99,9 @@ namespace HeliosWeb
             services
                 .AddHealthChecksUI(settings =>
                 {
-                    settings.SetHeaderText("EM300LR Gatway - Health Checks Status");
-                    settings.AddHealthCheckEndpoint("Process", "/health-process");
-                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                    settings.SetHeaderText("Helios Gatway - Health Checks Status");
+                    settings.AddHealthCheckEndpoint("Process", "http://localhost/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "http://localhost/health-gateway");
                 })
                 .AddInMemoryStorage()
                 ;
@@ -118,7 +118,7 @@ namespace HeliosWeb
                     c.SwaggerDoc("v1", new OpenApiInfo
                     {
                         Title = "Helios Gateway Web API",
-                        Description = "This is a web gateway service for a Helios KWL EC 200 ventilation unit.",
+                        Description = "This is a web gateway service for a Helios KWL 200 EC ventilation unit.",
                         Version = "v1"
                     });
                 });

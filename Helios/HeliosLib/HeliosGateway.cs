@@ -27,7 +27,7 @@ namespace HeliosLib
     #endregion
 
     /// <summary>
-    /// Class holding data from the Heios easyControl Web Service (KWL EC200).
+    /// Class holding data from the Helios easyControl Web Service (KWL EC200).
     /// The data properties are based on the specification
     /// "Helios Ventilatoren Funktions- und Schnittstellenbeschreibung"
     /// NR. 82 269 - Modbus Gateway TCP/IP mit EasyControls. Druckschrift-Nr. 82269/07.14

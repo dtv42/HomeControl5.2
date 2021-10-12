@@ -2,7 +2,7 @@
   "profiles": {
     "ETAPU11App": {
       "commandName": "Project",
-      "commandLineArgs": "-?"
+      "commandLineArgs": "read -d --blockmode"
     }
   }
 }

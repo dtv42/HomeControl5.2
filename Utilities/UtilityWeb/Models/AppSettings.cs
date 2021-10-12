@@ -22,7 +22,7 @@ namespace UtilityWeb.Models
     public sealed class AppSettings
     {
         public SettingsData Data { get; set; } = new SettingsData();
-        public GatewaySettings GatewaySettings { get; set; } = new GatewaySettings();
+        public WebGatewaySettings GatewaySettings { get; set; } = new WebGatewaySettings();
         public PingHealthCheckOptions PingOptions { get; set; } = new PingHealthCheckOptions();
     }
 }

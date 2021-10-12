@@ -100,8 +100,8 @@ namespace FroniusWeb
                 .AddHealthChecksUI(settings =>
                 {
                     settings.SetHeaderText("EM300LR Gatway - Health Checks Status");
-                    settings.AddHealthCheckEndpoint("Process", "/health-process");
-                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                    settings.AddHealthCheckEndpoint("Process", "http://localhost/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", "http://localhost/health-gateway");
                 })
                 .AddInMemoryStorage()
                 ;

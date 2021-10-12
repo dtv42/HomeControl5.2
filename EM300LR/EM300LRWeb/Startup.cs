@@ -14,6 +14,7 @@ namespace EM300LRWeb
 
     using System;
     using System.Collections.Generic;
+    using System.Net;
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -100,8 +101,8 @@ namespace EM300LRWeb
                 .AddHealthChecksUI(settings =>
                 {
                     settings.SetHeaderText("EM300LR Gatway - Health Checks Status");
-                    settings.AddHealthCheckEndpoint("Process", "/health-process");
-                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                    settings.AddHealthCheckEndpoint("Process", $"http://{Dns.GetHostName()}/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", $"http://{Dns.GetHostName()}/health-gateway");
                 })
                 .AddInMemoryStorage()
                 ;

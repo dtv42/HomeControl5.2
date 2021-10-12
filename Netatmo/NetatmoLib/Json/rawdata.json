@@ -1,0 +1,228 @@
+{
+  "body": {
+    "devices": [
+      {
+        "_id": "70:ee:50:03:cd:88",
+        "station_name": "Grabenweg 4 (Main Station)",
+        "date_setup": 1406228663,
+        "last_setup": 1406228663,
+        "type": "NAMain",
+        "last_status_store": 1610721784,
+        "module_name": "Main Station",
+        "firmware": 177,
+        "last_upgrade": 1440004645,
+        "wifi_status": 53,
+        "reachable": true,
+        "co2_calibrating": false,
+        "data_type": [
+          "Temperature",
+          "CO2",
+          "Humidity",
+          "Noise",
+          "Pressure"
+        ],
+        "place": {
+          "altitude": 497,
+          "city": "Gemeinde Yspertal",
+          "country": "AT",
+          "timezone": "Europe/Vienna",
+          "location": [
+            15.067141,
+            48.279996
+          ]
+        },
+        "home_id": "59143d692b2b46543b8b45a4",
+        "home_name": "Grabenweg 4",
+        "dashboard_data": {
+          "time_utc": 1610713303,
+          "Temperature": 23.1,
+          "CO2": 775,
+          "Humidity": 30,
+          "Noise": 42,
+          "Pressure": 1018.2,
+          "AbsolutePressure": 959.6,
+          "min_temp": 22,
+          "max_temp": 23.4,
+          "date_max_temp": 1610665486,
+          "date_min_temp": 1610687276,
+          "pressure_trend": "up"
+        },
+        "modules": [
+          {
+            "_id": "03:00:00:01:b4:f6",
+            "type": "NAModule4",
+            "module_name": "Indoor 1",
+            "last_setup": 1418401122,
+            "data_type": [
+              "Temperature",
+              "CO2",
+              "Humidity"
+            ],
+            "battery_percent": 50,
+            "reachable": true,
+            "firmware": 50,
+            "last_message": 1610721777,
+            "last_seen": 1610721745,
+            "rf_status": 64,
+            "battery_vp": 5097,
+            "dashboard_data": {
+              "time_utc": 1610713288,
+              "Temperature": 21,
+              "CO2": 655,
+              "Humidity": 35,
+              "min_temp": 20.5,
+              "max_temp": 21.1,
+              "date_max_temp": 1610665460,
+              "date_min_temp": 1610673918
+            }
+          },
+          {
+            "_id": "05:00:00:00:ed:4a",
+            "type": "NAModule3",
+            "module_name": "Rain Gauge",
+            "last_setup": 1418401464,
+            "data_type": [
+              "Rain"
+            ],
+            "battery_percent": 93,
+            "reachable": true,
+            "firmware": 12,
+            "last_message": 1610721777,
+            "last_seen": 1610721771,
+            "rf_status": 75,
+            "battery_vp": 5836,
+            "dashboard_data": {
+              "time_utc": 1610713301,
+              "Rain": 0,
+              "sum_rain_1": 0,
+              "sum_rain_24": 0.1
+            }
+          },
+          {
+            "_id": "03:00:00:02:1a:4c",
+            "type": "NAModule4",
+            "module_name": "Indoor 2",
+            "last_setup": 1433433687,
+            "data_type": [
+              "Temperature",
+              "CO2",
+              "Humidity"
+            ],
+            "battery_percent": 28,
+            "reachable": true,
+            "firmware": 50,
+            "last_message": 1610721778,
+            "last_seen": 1610721752,
+            "rf_status": 60,
+            "battery_vp": 4702,
+            "dashboard_data": {
+              "time_utc": 1610713294,
+              "Temperature": 15.4,
+              "CO2": 635,
+              "Humidity": 45,
+              "min_temp": 14.5,
+              "max_temp": 15.4,
+              "date_max_temp": 1610712987,
+              "date_min_temp": 1610673309
+            }
+          },
+          {
+            "_id": "06:00:00:02:40:cc",
+            "type": "NAModule2",
+            "module_name": "Wind Sensor",
+            "last_setup": 1481805618,
+            "data_type": [
+              "Wind"
+            ],
+            "battery_percent": 93,
+            "reachable": true,
+            "firmware": 25,
+            "last_message": 1610721778,
+            "last_seen": 1610721778,
+            "rf_status": 81,
+            "battery_vp": 5864,
+            "dashboard_data": {
+              "time_utc": 1610713301,
+              "WindStrength": 4,
+              "WindAngle": 249,
+              "GustStrength": 6,
+              "GustAngle": 260,
+              "max_wind_str": 10,
+              "max_wind_angle": 6,
+              "date_max_wind_str": 1610688483
+            }
+          },
+          {
+            "_id": "03:00:00:05:89:6e",
+            "type": "NAModule4",
+            "module_name": "Indoor 3",
+            "last_setup": 1512641371,
+            "data_type": [
+              "Temperature",
+              "CO2",
+              "Humidity"
+            ],
+            "battery_percent": 31,
+            "reachable": true,
+            "firmware": 50,
+            "last_message": 1610721778,
+            "last_seen": 1610721746,
+            "rf_status": 83,
+            "battery_vp": 4752,
+            "dashboard_data": {
+              "time_utc": 1610713288,
+              "Temperature": 22.8,
+              "CO2": 623,
+              "Humidity": 30,
+              "min_temp": 20.6,
+              "max_temp": 22.8,
+              "date_max_temp": 1610712364,
+              "date_min_temp": 1610685145
+            }
+          },
+          {
+            "_id": "02:00:00:62:ff:a2",
+            "type": "NAModule1",
+            "module_name": "Outdoor",
+            "last_setup": 1603095136,
+            "data_type": [
+              "Temperature",
+              "Humidity"
+            ],
+            "battery_percent": 87,
+            "reachable": true,
+            "firmware": 50,
+            "last_message": 1610721777,
+            "last_seen": 1610721765,
+            "rf_status": 70,
+            "battery_vp": 5764,
+            "dashboard_data": {
+              "time_utc": 1610713256,
+              "Temperature": 0.1,
+              "Humidity": 78,
+              "min_temp": -9.6,
+              "max_temp": 0.8,
+              "date_max_temp": 1610710539,
+              "date_min_temp": 1610675424
+            }
+          }
+        ]
+      }
+    ],
+    "user": {
+      "mail": "peter.trimmel@live.com",
+      "administrative": {
+        "country": "AT",
+        "feel_like_algo": 1,
+        "lang": "en",
+        "pressureunit": 0,
+        "reg_locale": "en-US",
+        "unit": 0,
+        "windunit": 0
+      }
+    }
+  },
+  "status": "ok",
+  "time_exec": 0.10017704963684082,
+  "time_server": 1610721815
+}

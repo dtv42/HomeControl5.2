@@ -14,7 +14,7 @@ namespace WallboxTest
 
     using System;
     using System.Globalization;
-
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
     using WallboxLib;
@@ -27,12 +27,7 @@ namespace WallboxTest
         #region Public Properties
 
         public WallboxGateway Gateway { get; private set; }
-        public WallboxSettings Settings { get; private set; } = new WallboxSettings()
-        {
-            EndPoint = "10.0.1.9:7090",
-            Port = 7090,
-            Timeout = 1000
-        };
+        public WallboxSettings Settings { get; private set; } = new WallboxSettings();
 
     #endregion
 
@@ -42,6 +37,12 @@ namespace WallboxTest
         {
             // Set the default culture.
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
+
+            var configuration = new ConfigurationBuilder()
+               .AddJsonFile("appsettings.json")
+               .Build();
+
+            configuration.GetSection("AppSettings:GatewaySettings").Bind(Settings);
 
             var loggerFactory = new LoggerFactory();
 

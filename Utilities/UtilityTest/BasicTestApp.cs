@@ -26,7 +26,7 @@ namespace UtilityTest
             Console.SetOut(sw);
 
             // Initialize process here
-            Process proc = new Process();
+            Process proc = new();
             proc.StartInfo.FileName = @"dotnet";
 
             // add arguments as whole string

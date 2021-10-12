@@ -12,8 +12,7 @@ namespace ETAPU11Web
 {
     #region Using Directives
 
-    using System;
-    using System.Collections.Generic;
+    using System.Net;
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -28,14 +27,15 @@ namespace ETAPU11Web
 
     using Serilog;
 
+    using ModbusLib;
+    using ModbusLib.Models;
+
     using UtilityLib;
     using UtilityLib.Webapp;
 
     using ETAPU11Lib;
     using ETAPU11Lib.Models;
     using ETAPU11Web.Models;
-    using ModbusLib;
-    using ModbusLib.Models;
 
     #endregion Using Directives
 
@@ -92,8 +92,8 @@ namespace ETAPU11Web
                 .AddHealthChecksUI(settings =>
                 {
                     settings.SetHeaderText("ETAPU11 Gateway - Health Checks Status");
-                    settings.AddHealthCheckEndpoint("Process", "/health-process");
-                    settings.AddHealthCheckEndpoint("Gateway", "/health-gateway");
+                    settings.AddHealthCheckEndpoint("Process", $"http://{Dns.GetHostName()}/health-process");
+                    settings.AddHealthCheckEndpoint("Gateway", $"http://{Dns.GetHostName()}/health-gateway");
                 })
                 .AddInMemoryStorage()
                 ;
@@ -145,7 +145,7 @@ namespace ETAPU11Web
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "EM300LR Gateway API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "ETAPU11 Gateway API V1");
             });
 
             app.UseEndpoints(endpoints =>

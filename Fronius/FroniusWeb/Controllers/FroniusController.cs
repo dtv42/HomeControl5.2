@@ -46,7 +46,7 @@ namespace FroniusWeb.Controllers
         /// Initializes a new instance of the <see cref="FroniusController"/> class.
         /// The parameters provided by dependency injection are used to set private fields.
         /// </summary>
-        /// <param name="gateway">The EM300LR gateway instance.</param>
+        /// <param name="gateway">The Fronius gateway instance.</param>
         /// <param name="configuration">The application configuration instance.</param>
         /// <param name="logger">The logger instance.</param>
         public FroniusController(FroniusGateway gateway, IConfiguration configuration, ILogger<FroniusController> logger)

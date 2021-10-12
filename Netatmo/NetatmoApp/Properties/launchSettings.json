@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "NetatmoApp": {
+      "commandName": "Project",
+      "commandLineArgs": "monitor -1 Temperature",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

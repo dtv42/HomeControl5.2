@@ -895,17 +895,12 @@ namespace ETAPU11Lib.Models
         /// <returns></returns>
         public TimeSpan GetTimeSpanValue(string property, uint value)
         {
-            switch (property)
+            return property switch
             {
-                case "HopperFillUpTime":
-                case "AshRemovalStartIdleTime":
-                    return TimeSpan.FromSeconds(value * 60);
-                case "FullLoadHours":
-                case "AshRemovalDurationIdleTime":
-                    return TimeSpan.FromSeconds(value);
-                default:
-                    return new TimeSpan();
-            }
+                "HopperFillUpTime" or "AshRemovalStartIdleTime" => TimeSpan.FromSeconds(value * 60),
+                "FullLoadHours" or "AshRemovalDurationIdleTime" => TimeSpan.FromSeconds(value),
+                _ => new TimeSpan(),
+            };
         }
 
         /// <summary>
@@ -944,17 +939,12 @@ namespace ETAPU11Lib.Models
         /// <returns></returns>
         public uint GetUInt32Value(string property, TimeSpan value)
         {
-            switch (property)
+            return property switch
             {
-                case "HopperFillUpTime":
-                case "AshRemovalStartIdleTime":
-                    return (UInt32)(((TimeSpan)value).TotalSeconds / 60);
-                case "FullLoadHours":
-                case "AshRemovalDurationIdleTime":
-                    return (UInt32)(((TimeSpan)value).TotalSeconds);
-                default:
-                    return 0;
-            }
+                "HopperFillUpTime" or "AshRemovalStartIdleTime" => (UInt32)(((TimeSpan)value).TotalSeconds / 60),
+                "FullLoadHours" or "AshRemovalDurationIdleTime" => (UInt32)(((TimeSpan)value).TotalSeconds),
+                _ => 0,
+            };
         }
 
         /// <summary>
